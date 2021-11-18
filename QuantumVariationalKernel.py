@@ -2,6 +2,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from KernelKMeans import KernelKMeans
 from utils import visualize
+from sklearn import metrics
 
 def layer(x, params, wires, i0=0, inc=1):
     """Building block of the embedding ansatz"""
@@ -42,20 +43,51 @@ class QuantumVariationalKernel():
     def kernel_with_params(self, x1, x2, params):
         return self.qnode(x1, x2, self.params)[0]
 
-    def train():
-        #TODO
-        pass
+    def metric(self, X, labels):
+        return np.inner(labels, labels).astype(np.float32)
+
+    def cluster(self, X, kernel):
+        return np.random.randint(2, size=X.shape[0])
+
+    def c(self, X, params, kmeans):
+        clu = kmeans.fit(X, lambda x1, x2: self.kernel_with_params(x1, x2, params)).labels_
+        return metrics.davies_bouldin_score(X, clu)
+
+    def train(self, X):
+        opt = qml.GradientDescentOptimizer(0.2)
+
+        subset = np.random.choice(list(range(len(X))), 10)
+        for i in range(5):
+            kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
+            clus = kmeans.fit(X[subset], kernel=lambda x1, x2: self.kernel_with_params(x1, x2, self.params)).labels_
+            # Define the cost function for optimization
+            cost = lambda _params: metrics.davies_bouldin_score(
+                X[subset],
+                #kmeans.fit(X, kernel=lambda x1, x2: self.kernel_with_params(x1, x2, _params)).labels_
+                clus
+            )
+            # Optimization step
+            self.params, c = opt.step_and_cost(cost, self.params)
+            print(self.params)
+            print(c)
+
+            # Report the alignment on the full dataset every 50 steps.
+            if (i + 1) % 50 == 0:
+                score = metrics.davies_bouldin_score(X, kmeans.fit(X, lambda x1, x2: self.kernel(x1, x2)).labels_)
+                print(f"Step {i+1} - Score = {score:.3f}")
 
 if __name__ == '__main__':
     from sklearn.datasets import make_blobs
-    X, y = make_blobs(n_samples=100, centers=2, random_state=0)
+    X, y = make_blobs(n_samples=10, centers=2, random_state=0)
 
-    qvk = QuantumVariationalKernel(5, layer=layer)
     init_params = random_params(num_wires=5, num_layers=6)
-    init_kernel = lambda x1, x2: qvk.kernel(x1, x2, init_params)
+    qvk = QuantumVariationalKernel(5, layer=layer, init_params=init_params)
+    #init_kernel = lambda x1, x2: qvk.kernel_with_params(x1, x2, init_params)
     #K_init = qml.kernels.square_kernel_matrix(X, init_kernel, assume_normalized_kernel=True)
-    km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=init_kernel)
-    
-    result = km.fit(X).labels_
+    #km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=init_kernel)
 
-    visualize(X, y, result)
+    #result = km.fit(X).labels_
+
+    #visualize(X, y, result)
+    #print(qvk.target_alignment(X, y, init_kernel, assume_normalized_kernel=True))
+    qvk.train(X)
