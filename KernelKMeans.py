@@ -3,7 +3,8 @@
 # Author: Mathieu Blondel <mathieu@mblondel.org>
 # License: BSD 3 clause
 
-import numpy as np
+import autograd.numpy as np
+import pennylane as qml
 
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.metrics.pairwise import pairwise_kernels
@@ -11,6 +12,9 @@ from sklearn.utils import check_random_state
 
 from utils import visualize
 from QuantumKernel import kernel
+
+def euc(x1, x2):
+    return np.linalg.norm(x1-x2)
 
 class KernelKMeans(BaseEstimator, ClusterMixin):
     """
@@ -49,11 +53,13 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
             params = {"gamma": self.gamma,
                       "degree": self.degree,
                       "coef0": self.coef0}
-        return pairwise_kernels(X, Y, metric=self.kernel,
-                                filter_params=True, **params)
+        return qml.kernels.square_kernel_matrix(X, self.kernel)
+        #return pairwise_kernels(X, Y, metric=self.kernel,
+        #                        filter_params=True, **params)
 
-    def fit(self, X, y=None, sample_weight=None):
+    def fit(self, X, y=None, sample_weight=None, kernel="linear"):
         n_samples = X.shape[0]
+        self.kernel = kernel
 
         K = self._get_kernel(X)
 
@@ -69,7 +75,7 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
 
         for it in range(self.max_iter):
             dist.fill(0)
-            self._compute_dist(K, dist, self.within_distances_,
+            dist = self._compute_dist(K, dist, self.within_distances_,
                                update_within=True)
             labels_old = self.labels_
             self.labels_ = dist.argmin(axis=1)
@@ -92,6 +98,7 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
         kernel trick."""
         sw = self.sample_weight_
 
+        dist_mat = dist.copy()
         for j in range(self.n_clusters):
             mask = self.labels_ == j
 
@@ -101,31 +108,31 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
             denom = sw[mask].sum()
             denomsq = denom * denom
 
+            dist_vec = None
             if update_within:
                 KK = K[mask][:, mask]  # K[mask, mask] does not work.
                 dist_j = np.sum(np.outer(sw[mask], sw[mask]) * KK / denomsq)
-                within_distances[j] = dist_j
-                dist[:, j] += dist_j
+                #within_distances[j] = dist_j
+                within_distances = np.concatenate((np.concatenate((within_distances[:j], [dist_j])), within_distances[j+1:]))
+                #dist[:, j] = dist[:, j] + dist_j
+                dist_vec = dist_mat[:, j] + dist_j
             else:
-                dist[:, j] += within_distances[j]
+                #dist[:, j] = dist[:, j] + within_distances[j]
+                dist_vec = dist_mat[:, j] + within_distances[j]
 
-            dist[:, j] -= 2 * np.sum(sw[mask] * K[:, mask], axis=1) / denom
-
-    def predict(self, X):
-        K = self._get_kernel(X, self.X_fit_)
-        n_samples = X.shape[0]
-        dist = np.zeros((n_samples, self.n_clusters))
-        self._compute_dist(K, dist, self.within_distances_,
-                           update_within=False)
-        return dist.argmin(axis=1)
+            #dist[:, j] = dist[:, j] - 2 * np.sum(sw[mask] * K[:, mask], axis=1) / denom
+            dist_vec = dist_vec - 2 * np.sum(sw[mask] * K[:, mask], axis=1) / denom
+            dist_vec = np.reshape(dist_vec, (dist_vec.shape[0], 1))
+            dist_mat = np.concatenate((np.concatenate((dist_mat[:, :j], dist_vec), axis=1), dist_mat[:, j+1:]), axis=1)
+        return dist_mat
 
 if __name__ == '__main__':
     from sklearn.datasets import make_blobs
     X, y = make_blobs(n_samples=100, centers=2, random_state=0)
 
     angle_kernel = lambda x1, x2: kernel(x1, x2, "angle")
-    km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=angle_kernel)
+    km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=euc)
     
-    result = km.fit(X).labels_
+    result = km.fit(X, kernel=euc).labels_
 
     visualize(X, y, result)
