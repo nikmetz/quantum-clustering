@@ -4,13 +4,14 @@ from KernelKMeans import KernelKMeans
 from utils import visualize
 from sklearn import metrics
 from Ansatz import ansatz
+import random
 
 def random_params(num_wires, num_layers):
     """Generate random variational parameters in the shape for the ansatz."""
     return np.random.uniform(0, 2 * np.pi, (num_layers, 2, num_wires))
 
 class QuantumVariationalKernel():
-    def __init__(self, wires, ansatz, init_params, cost, device="default.qubit", shots=1024):
+    def __init__(self, wires, ansatz, init_params, cost, device="default.qubit", shots=None):
         self.device = qml.device(device, wires=wires, shots=shots)
         self.ansatz = ansatz
         self.qnode = qml.QNode(self.kernel_circuit, self.device)
@@ -61,6 +62,16 @@ class QuantumVariationalKernel():
 
         return inner_product
 
+    def triplet_loss(self, X, labels, num_samples, alpha, params):
+        anchor_index = random.randrange(labels.shape[0])
+        anchor = X[anchor_index]
+        negative = random.choice(X[labels != labels[anchor_index]])
+        positive_mask = labels == labels[anchor_index]
+        positive_mask[anchor_index] = False
+        positive = random.choice(X[positive_mask])
+
+        return max(self.kernel_with_params(anchor, positive, params) - self.kernel_with_params(anchor, negative, params) + alpha, 0)
+
     def train(self, X, Y=None):
         opt = qml.GradientDescentOptimizer(0.2)
 
@@ -78,6 +89,8 @@ class QuantumVariationalKernel():
             elif self.cost_func == "tripletloss":
                 kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
                 la = kmeans.fit(X[subset], self.kernel).labels_
+
+                cost = lambda _params: self.triplet_loss(X[subset], la, 1, 0.5, _params)
             else:
                 kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
 
@@ -105,6 +118,6 @@ if __name__ == '__main__':
     Y_new = np.array([y if y == 1 else -1 for y in Y])
 
     init_params = random_params(num_wires=5, num_layers=6)
-    qvk = QuantumVariationalKernel(wires=5, ansatz=ansatz, init_params=init_params, cost="KT")
+    qvk = QuantumVariationalKernel(wires=5, ansatz=ansatz, init_params=init_params, cost="tripletloss")
 
     qvk.train(X, Y_new)
