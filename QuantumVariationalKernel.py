@@ -10,7 +10,7 @@ def random_params(num_wires, num_layers):
     return np.random.uniform(0, 2 * np.pi, (num_layers, 2, num_wires))
 
 class QuantumVariationalKernel():
-    def __init__(self, wires, ansatz, init_params, cost, device="default.qubit", shots=None):
+    def __init__(self, wires, ansatz, init_params, cost, device="default.qubit", shots=1024):
         self.device = qml.device(device, wires=wires, shots=shots)
         self.ansatz = ansatz
         self.qnode = qml.QNode(self.kernel_circuit, self.device)
@@ -28,7 +28,8 @@ class QuantumVariationalKernel():
         return self.kernel_with_params(x1, x2, self.params)
 
     def kernel_with_params(self, x1, x2, params):
-        return self.qnode(x1, x2, params)[0]
+        a = 1-self.qnode(x1, x2, params)[0]
+        return a
 
     def target_alignment(
         self,
@@ -64,41 +65,46 @@ class QuantumVariationalKernel():
         opt = qml.GradientDescentOptimizer(0.2)
 
         for i in range(100):
-            subset = np.random.choice(list(range(len(X))), 4)
+            subset = np.random.choice(list(range(len(X))), 5)
             if self.cost_func == "KTA":
-                cost = lambda _params: -self.target_alignment(X[subset], Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params),assume_normalized_kernel=True)
-            else:
+                #Semi-supervised learning with the kernel target alignment
+                cost = lambda _params: -qml.kernels.target_alignment(X[subset], Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params),assume_normalized_kernel=True)
+            elif self.cost_func == "daviesbouldin":
                 kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
-                # Define the cost function for optimization
                 cost = lambda _params: metrics.davies_bouldin_score(
                     X[subset],
-                    kmeans.fit(X, kernel=lambda x1, x2: self.kernel_with_params(x1, x2, _params)).labels_
+                    kmeans.fit(X[subset], kernel=lambda x1, x2: self.kernel_with_params(x1, x2, _params)).labels_
                 )
+            elif self.cost_func == "tripletloss":
+                kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
+                la = kmeans.fit(X[subset], self.kernel).labels_
+            else:
+                kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
+
+                la = kmeans.fit(X[subset], self.kernel).labels_
+                la = np.array([y if y == 1 else -1 for y in la])
+                cost = lambda _params: -qml.kernels.target_alignment(
+                    X[subset],
+                    la,
+                    lambda x1, x2: self.kernel_with_params(x1, x2, _params),
+                    assume_normalized_kernel=True,
+                )
+
             # Optimization step
             self.params= opt.step(cost, self.params)
 
+            # Output the current quality
             if (i + 1) % 1 == 0:
-                current_alignment = self.target_alignment(
-                    X,
-                    Y,
-                    lambda x1, x2: self.kernel_with_params(x1, x2, self.params),
-                    assume_normalized_kernel=True,
-                )
-                print(f"Step {i+1} - Alignment = {current_alignment:.3f}")
+                km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
+                lab = km.fit(X, self.kernel).labels_
+                print("{}, {}".format(lab, metrics.davies_bouldin_score(X, lab)))
 
 if __name__ == '__main__':
     from sklearn.datasets import make_blobs
-    X, Y = make_blobs(n_samples=10, centers=2, random_state=0)
+    X, Y = make_blobs(n_samples=50, centers=2, random_state=0)
     Y_new = np.array([y if y == 1 else -1 for y in Y])
 
     init_params = random_params(num_wires=5, num_layers=6)
-    qvk = QuantumVariationalKernel(wires=5, ansatz=ansatz, init_params=init_params, cost="KTA")
-    #init_kernel = lambda x1, x2: qvk.kernel_with_params(x1, x2, init_params)
-    #K_init = qml.kernels.square_kernel_matrix(X, init_kernel, assume_normalized_kernel=True)
-    #km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=init_kernel)
+    qvk = QuantumVariationalKernel(wires=5, ansatz=ansatz, init_params=init_params, cost="KT")
 
-    #result = km.fit(X).labels_
-
-    #visualize(X, y, result)
-    #print(qvk.target_alignment(X, y, init_kernel, assume_normalized_kernel=True))
     qvk.train(X, Y_new)
