@@ -2,6 +2,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from KernelKMeans import KernelKMeans
 from utils import visualize
+from utils import vector_change
 from sklearn import metrics
 from Ansatz import ansatz
 import random
@@ -63,14 +64,16 @@ class QuantumVariationalKernel():
         return inner_product
 
     def triplet_loss(self, X, labels, num_samples, alpha, params):
-        anchor_index = random.randrange(labels.shape[0])
-        anchor = X[anchor_index]
-        negative = random.choice(X[labels != labels[anchor_index]])
-        positive_mask = labels == labels[anchor_index]
-        positive_mask[anchor_index] = False
-        positive = random.choice(X[positive_mask])
-
-        return max(self.kernel_with_params(anchor, positive, params) - self.kernel_with_params(anchor, negative, params) + alpha, 0)
+        sum = 0
+        for i in range(num_samples):
+            anchor_index = random.randrange(labels.shape[0])
+            anchor = X[anchor_index]
+            negative = random.choice(X[labels != labels[anchor_index]])
+            positive_mask = labels == labels[anchor_index]
+            positive_mask = vector_change(positive_mask, False, anchor_index)
+            positive = random.choice(X[positive_mask])
+            sum = sum + max(self.kernel_with_params(anchor, positive, params) - self.kernel_with_params(anchor, negative, params) + alpha, 0)
+        return sum
 
     def train(self, X, Y=None):
         opt = qml.GradientDescentOptimizer(0.2)

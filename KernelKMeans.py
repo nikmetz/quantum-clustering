@@ -4,6 +4,7 @@
 # License: BSD 3 clause
 
 import autograd.numpy as np
+from numpy.lib.function_base import angle
 import pennylane as qml
 
 from sklearn.base import BaseEstimator, ClusterMixin
@@ -11,6 +12,7 @@ from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.utils import check_random_state
 
 from utils import visualize
+from utils import vector_change
 from QuantumKernel import kernel
 
 def euc(x1, x2):
@@ -57,9 +59,10 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
         #return pairwise_kernels(X, Y, metric=self.kernel,
         #                        filter_params=True, **params)
 
-    def fit(self, X, y=None, sample_weight=None, kernel="linear"):
+    def fit(self, X, y=None, sample_weight=None, kernel=None):
         n_samples = X.shape[0]
-        self.kernel = kernel
+        if kernel is not None:
+            self.kernel = kernel
 
         K = self._get_kernel(X)
 
@@ -70,11 +73,10 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
         self.labels_ = rs.randint(self.n_clusters, size=n_samples)
         self.all_labels.append(self.labels_)
 
-        dist = np.zeros((n_samples, self.n_clusters))
         self.within_distances_ = np.zeros(self.n_clusters)
 
         for it in range(self.max_iter):
-            dist.fill(0)
+            dist = np.zeros((n_samples, self.n_clusters))
             dist = self._compute_dist(K, dist, self.within_distances_,
                                update_within=True)
             labels_old = self.labels_
@@ -113,7 +115,7 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
                 KK = K[mask][:, mask]  # K[mask, mask] does not work.
                 dist_j = np.sum(np.outer(sw[mask], sw[mask]) * KK / denomsq)
                 #within_distances[j] = dist_j
-                within_distances = np.concatenate((np.concatenate((within_distances[:j], [dist_j])), within_distances[j+1:]))
+                within_distances = vector_change(within_distances, dist_j, j)
                 #dist[:, j] = dist[:, j] + dist_j
                 dist_vec = dist_mat[:, j] + dist_j
             else:
@@ -128,11 +130,12 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
 
 if __name__ == '__main__':
     from sklearn.datasets import make_blobs
-    X, y = make_blobs(n_samples=100, centers=2, random_state=0)
+    X, y = make_blobs(n_samples=5, centers=2, random_state=0)
 
     angle_kernel = lambda x1, x2: kernel(x1, x2, "angle")
-    km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=euc)
+    km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=angle_kernel)
     
-    result = km.fit(X, kernel=euc).labels_
+    result = km.fit(X, kernel=angle_kernel).labels_
+    print(result)
 
     visualize(X, y, result)

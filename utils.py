@@ -1,4 +1,4 @@
-import numpy as np
+import autograd.numpy as np
 import matplotlib.pyplot as plt
 
 def visualize(X, true_labels, labels):
@@ -12,3 +12,6 @@ def visualize(X, true_labels, labels):
     for i in range(num_clusters):
         a = ax.scatter(xs[true_labels == i], ys[true_labels == i], marker=mark[i], c=labels[true_labels == i])
     plt.show()
+
+def vector_change(vec, value, index):
+    return np.concatenate((np.concatenate((vec[:index], [value])), vec[index+1:]))
