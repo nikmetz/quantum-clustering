@@ -6,6 +6,7 @@ from utils import vector_change
 from sklearn import metrics
 from Ansatz import ansatz
 import random
+import time
 
 def random_params(num_wires, num_layers):
     """Generate random variational parameters in the shape for the ansatz."""
@@ -64,7 +65,7 @@ class QuantumVariationalKernel():
         return inner_product
 
     def triplet_loss(self, X, labels, num_samples, alpha, params):
-        sum = 0
+        sum = 0.0
         for i in range(num_samples):
             anchor_index = random.randrange(labels.shape[0])
             anchor = X[anchor_index]
@@ -110,7 +111,7 @@ class QuantumVariationalKernel():
             self.params= opt.step(cost, self.params)
 
             # Output the current quality
-            if (i + 1) % 1 == 0:
+            if (i + 1) % 50 == 0:
                 km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
                 lab = km.fit(X, self.kernel).labels_
                 print("{}, {}".format(lab, metrics.davies_bouldin_score(X, lab)))
