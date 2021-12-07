@@ -4,7 +4,7 @@ from KernelKMeans import KernelKMeans
 from utils import visualize
 from utils import vector_change
 from sklearn import metrics
-from Ansatz import ansatz
+from Ansatz import ansatz2
 import random
 import time
 
@@ -23,16 +23,15 @@ class QuantumVariationalKernel():
         self.cost_func = cost
 
     def kernel_circuit(self, x1, x2, params):
-        self.ansatz(x1, params, wires=self.wires)
-        self.adjoint_ansatz(x2, params, wires=self.wires)
+        self.ansatz(x1, params, wires=2)
+        self.adjoint_ansatz(x2, params, wires=2)
         return qml.probs(wires=self.wires)
 
     def kernel(self, x1, x2):
         return self.kernel_with_params(x1, x2, self.params)
 
     def kernel_with_params(self, x1, x2, params):
-        a = 1-self.qnode(x1, x2, params)[0]
-        return a
+        return 1-self.qnode(x1, x2, params)[0]
 
     def target_alignment(
         self,
@@ -71,7 +70,7 @@ class QuantumVariationalKernel():
             anchor = X[anchor_index]
             negative = random.choice(X[labels != labels[anchor_index]])
             positive_mask = labels == labels[anchor_index]
-            positive_mask = vector_change(positive_mask, False, anchor_index)
+            #positive_mask = vector_change(positive_mask, False, anchor_index)
             positive = random.choice(X[positive_mask])
             sum = sum + max(self.kernel_with_params(anchor, positive, params) - self.kernel_with_params(anchor, negative, params) + alpha, 0)
         return sum
@@ -79,7 +78,8 @@ class QuantumVariationalKernel():
     def train(self, X, Y=None):
         opt = qml.GradientDescentOptimizer(0.2)
 
-        for i in range(100):
+        for i in range(1000):
+            print(i)
             subset = np.random.choice(list(range(len(X))), 5)
             if self.cost_func == "KTA":
                 #Semi-supervised learning with the kernel target alignment
@@ -116,12 +116,36 @@ class QuantumVariationalKernel():
                 lab = km.fit(X, self.kernel).labels_
                 print("{}, {}".format(lab, metrics.davies_bouldin_score(X, lab)))
 
+    def semi_supervised(self, X, Y, epochs=500):
+        opt = qml.GradientDescentOptimizer(0.2)
+        km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
+        lab = km.fit(X, self.kernel).labels_
+        print("{}".format(metrics.davies_bouldin_score(X, lab)))
+        visualize(X, Y, lab)
+
+        for epoch in range(epochs):
+            print("Epoch: {}".format(epoch))
+            perm = np.random.permutation(X.shape[0])
+            parts = [perm[i::1] for i in range(1)]
+            for i in parts:
+                cost = lambda _params: -qml.kernels.target_alignment(X[i], Y[i], lambda x1, x2: self.kernel_with_params(x1, x2, _params),assume_normalized_kernel=True)
+                self.params, c = opt.step_and_cost(cost, self.params)
+                print("{}, {}".format(i, c))
+            if (epoch + 1) % 10 == 0:
+                km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
+                lab = km.fit(X, self.kernel).labels_
+                print("Epoch {}: {}".format(epoch, metrics.davies_bouldin_score(X, lab)))
+                visualize(X, Y, lab)
+
+
 if __name__ == '__main__':
-    from sklearn.datasets import make_blobs
-    X, Y = make_blobs(n_samples=50, centers=2, random_state=0)
+    from sklearn import datasets
+    #X, Y = datasets.make_blobs(n_samples=50, centers=2, random_state=0)
+    X, Y = datasets.make_circles(50)
     Y_new = np.array([y if y == 1 else -1 for y in Y])
 
-    init_params = random_params(num_wires=5, num_layers=6)
-    qvk = QuantumVariationalKernel(wires=5, ansatz=ansatz, init_params=init_params, cost="tripletloss")
+    init_params = random_params(num_wires=2, num_layers=3)
+    qvk = QuantumVariationalKernel(wires=2, ansatz=ansatz2, init_params=init_params, cost="tripletloss")
 
-    qvk.train(X, Y_new)
+    #qvk.train(X, Y_new)
+    qvk.semi_supervised(X, Y_new)
