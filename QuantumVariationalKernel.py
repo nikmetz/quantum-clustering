@@ -1,9 +1,9 @@
 import pennylane as qml
+import CostFunctions
 from pennylane import numpy as np
 from KernelKMeans import KernelKMeans
 from sklearn import metrics
 from Ansatz import ansatz2
-import random
 
 def random_params(num_wires, num_layers, params_per_wire):
     """Generate random variational parameters in the shape for the ansatz."""
@@ -30,48 +30,6 @@ class QuantumVariationalKernel():
     def kernel_with_params(self, x1, x2, params):
         return 1-self.qnode(x1, x2, params)[0]
 
-    def target_alignment(
-        self,
-        X,
-        Y,
-        kernel,
-        assume_normalized_kernel=False,
-        rescale_class_labels=True,
-    ):
-        """Kernel-target alignment between kernel and labels."""
-
-        K = qml.kernels.square_kernel_matrix(
-            X,
-            kernel,
-            assume_normalized_kernel=assume_normalized_kernel,
-        )
-
-        if rescale_class_labels:
-            nplus = np.count_nonzero(np.array(Y) == 1)
-            nminus = len(Y) - nplus
-            _Y = np.array([y / nplus if y == 1 else y / nminus for y in Y])
-        else:
-            _Y = np.array(Y)
-
-        T = np.outer(_Y, _Y)
-        inner_product = np.sum(K * T)
-        norm = np.sqrt(np.sum(K * K) * np.sum(T * T))
-        inner_product = inner_product / norm
-
-        return inner_product
-
-    def triplet_loss(self, X, labels, num_samples, alpha, params):
-        sum = 0.0
-        for i in range(num_samples):
-            anchor_index = random.randrange(labels.shape[0])
-            anchor = X[anchor_index]
-            negative = random.choice(X[labels != labels[anchor_index]])
-            positive_mask = labels == labels[anchor_index]
-            #positive_mask = vector_change(positive_mask, False, anchor_index)
-            positive = random.choice(X[positive_mask])
-            sum = sum + max(self.kernel_with_params(anchor, positive, params) - self.kernel_with_params(anchor, negative, params) + alpha, 0)
-        return sum
-
     def train(self, X, Y=None):
         opt = qml.GradientDescentOptimizer(0.2)
 
@@ -91,7 +49,7 @@ class QuantumVariationalKernel():
                 kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
                 la = kmeans.fit(X[subset], self.kernel).labels_
 
-                cost = lambda _params: self.triplet_loss(X[subset], la, 1, 0.5, _params)
+                cost = lambda _params: CostFunctions.triplet_loss(X[subset], la, 1, 0.5, lambda x1, x2: self.kernel_with_params(x1, x2, _params))
             else:
                 kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
 
@@ -123,12 +81,12 @@ class QuantumVariationalKernel():
         for epoch in range(epochs):
             print("Epoch: {}".format(epoch))
             perm = np.random.permutation(train_X.shape[0])
-            parts = [perm[i::1] for i in range(1)]
+            parts = [perm[i::10] for i in range(10)]
             for idx, val in enumerate(parts):
                 cost = lambda _params: -qml.kernels.target_alignment(train_X[val], train_Y[val], lambda x1, x2: self.kernel_with_params(x1, x2, _params))
                 self.params, c = opt.step_and_cost(cost, self.params)
                 c_val = qml.kernels.target_alignment(val_X, val_Y, self.kernel)
-                print("Step: {}, cost: {}, val_cost: {}".format((epoch*1)+(idx), -c, c_val))
+                print("Step: {}, cost: {}, val_cost: {}".format((epoch*10)+(idx), -c, c_val))
             if (epoch + 1) % 100 == 0:
                 km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
                 lab = km.fit(X, self.kernel).labels_

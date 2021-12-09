@@ -7,9 +7,9 @@ def layer(x, params, wires, i0=0, inc=1):
         qml.Hadamard(wires=[wire])
         qml.RX(x[i % len(x)], wires=[wire])
         i += inc
-        qml.RY(params[0, j], wires=[wire])
+        qml.RY(params[j, 0], wires=[wire])
 
-    qml.broadcast(unitary=qml.CRZ, pattern="ring", wires=wires, parameters=params[1])
+    qml.broadcast(unitary=qml.CRZ, pattern="ring", wires=wires, parameters=params[:][1])
 
 def ansatz(x, params, wires):
     for j, layer_params in enumerate(params):
