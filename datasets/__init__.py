@@ -1,9 +1,9 @@
 from typing import Tuple, Optional, Union
 
-from maskit.datasets.circles import circles
-from maskit.datasets.iris import iris
-from maskit.datasets.mnist import mnist
-from maskit.datasets.utils import DataSet, pad_data
+from datasets.circles import circles
+from datasets.iris import iris
+from datasets.mnist import mnist
+from datasets.utils import DataSet, pad_data
 
 
 def load_data(

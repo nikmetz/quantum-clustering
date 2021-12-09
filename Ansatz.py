@@ -11,6 +11,10 @@ def layer(x, params, wires, i0=0, inc=1):
 
     qml.broadcast(unitary=qml.CRZ, pattern="ring", wires=wires, parameters=params[1])
 
+def ansatz(x, params, wires):
+    for j, layer_params in enumerate(params):
+        layer(x, layer_params, wires, i0=j * len(wires))
+
 def ansatz2(data, params, wires):
     for layer in range(3):
         for wire in range(wires):
@@ -23,7 +27,3 @@ def ansatz2(data, params, wires):
     qml.templates.embeddings.AngleEmbedding(
         features=data, wires=range(wires), rotation="X"
     )
-
-def ansatz(x, params, wires):
-    for j, layer_params in enumerate(params):
-        layer(x, layer_params, wires, i0=j * len(wires))
