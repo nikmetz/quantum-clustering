@@ -14,5 +14,15 @@ def visualize(X, true_labels, labels):
         a = ax.scatter(xs[true_labels == val], ys[true_labels == val], marker=mark[idx], c=colors[labels[true_labels == val]])
     plt.show()
 
+def simple_plot(xs, ys, xlabel, ylabel, filename, ylimit=None):
+    fig, ax = plt.subplots()
+    ax.plot(xs, ys)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if ylimit is not None:
+        ax.set_ylim(ylimit)
+    plt.savefig(filename)
+    return
+
 def vector_change(vec, value, index):
     return np.concatenate((np.concatenate((vec[:index], [value])), vec[index+1:]))
