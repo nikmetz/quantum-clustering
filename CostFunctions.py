@@ -1,4 +1,5 @@
 from pennylane import numpy as np
+from utils import vector_change
 import pennylane as qml
 import random
 
@@ -18,7 +19,7 @@ def multiclass_target_alignment(
 
     num_samples = Y.shape[0]
     T = [[1 if Y[0] == Y[j] else (-1/(num_classes-1)) for j in range(num_samples)]]
-    if num_samples.shape[0] > 1:
+    if num_samples > 1:
         for i in range(1, num_samples):
             T = np.concatenate((T, [[1. if Y[i] == Y[j] else (-1/(num_classes-1)) for j in range(num_samples)]]), axis=0)
 
@@ -26,10 +27,20 @@ def multiclass_target_alignment(
 
 def triplet_loss(X, labels, alpha, dist_func):
     sum = 0.0
+    K = qml.kernels.square_kernel_matrix(X, dist_func, assume_normalized_kernel=False)
     for anchor_idx, anchor in enumerate(X):
-        negative = random.choice(X[labels != labels[anchor_idx]])
+        current = K[anchor_idx]
+        #distance between anchor and the sample with a different label than the anchor and biggest distance to the anchor
+        dist_anchor_negative = current[labels != labels[anchor_idx]].max()
+
         positive_mask = labels == labels[anchor_idx]
-        #positive_mask = vector_change(positive_mask, False, anchor_index)
-        positive = random.choice(X[positive_mask])
-        sum = sum + max(dist_func(anchor, positive) - dist_func(anchor, negative) + alpha, 0)
+        if len(current[positive_mask]) > 1:
+            #if there is more than one sample with one label, don't choose the anchor as the positive example
+            positive_mask = vector_change(positive_mask, False, anchor_idx)
+        #distance between anchor and the sample with the same label as the anchor and smallest distance to the anchor
+        dist_anchor_positive = current[positive_mask].min()
+        print("Anchor: {}".format(anchor))
+        print("Positive: {}".format(dist_anchor_positive))
+        print("Negative: {}".format(dist_anchor_negative))
+        sum = sum + max(dist_anchor_positive - dist_anchor_negative + alpha, 0)
     return sum
