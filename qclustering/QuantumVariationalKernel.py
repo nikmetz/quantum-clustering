@@ -90,9 +90,11 @@ class QuantumVariationalKernel():
                 else:
                     pass
 
-            if (epoch + 1) % 1000 == 0:
+            if (epoch + 1) % 9 == 0:
+                print("in")
                 km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
                 lab = km.fit(X, self.kernel).labels_
+                print(lab)
                 davies = metrics.davies_bouldin_score(X, lab)
                 calinski = metrics.calinski_harabasz_score(X, lab)
                 if Y is not None:
@@ -116,7 +118,6 @@ if __name__ == '__main__':
     from datasets.iris import iris
     np.random.seed(42)
     data = iris(train_size=25, test_size=0, shuffle=True)
-    Y_new = np.array([y if y == 1 else -1 for y in data.train_target])
 
     wires = 4
     layers = 3
@@ -124,5 +125,4 @@ if __name__ == '__main__':
     init_params = random_params(num_wires=wires, num_layers=layers, params_per_wire=2)
     qvk = QuantumVariationalKernel(wires=wires, ansatz=ansatz2, init_params=init_params, cost_func="KTA-supervised")
 
-    #qvk.train(X, Y_new)
-    qvk.train(data.train_data, Y_new)
+    qvk.train(data.train_data, data.train_target)
