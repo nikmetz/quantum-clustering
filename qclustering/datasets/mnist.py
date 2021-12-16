@@ -5,7 +5,7 @@ from pennylane import numpy as np
 from sklearn.preprocessing import minmax_scale
 from sklearn.utils import shuffle as skl_shuffle
 
-from datasets.utils import DataSet
+from qclustering.datasets.utils import DataSet
 
 # ignore filtering on classes
 MAX_TRAIN_SAMPLES = 60000

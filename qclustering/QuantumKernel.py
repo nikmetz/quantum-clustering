@@ -16,14 +16,13 @@ def amplitude_kernel(x1, x2):
     qml.adjoint(AmplitudeEmbedding)(x2, wires=range(n_qubits), normalize=True)
     return qml.probs(wires=dev.wires.tolist())
 
-def angle_kernel(x1, x2):
-    return kernel("angle", x1, x2)
-
-def kernel(kernel_type, x1, x2):
+def kernel(x1, x2, kernel_type):
     if kernel_type == "angle":
         return angle_embedding(x1, x2)[0]
     elif kernel_type == "amplitude":
         return amplitude_kernel(x1, x2)[0]
 
-def kernel_matrix(kernel_type, X, Y=None):
-    pass
+def kernel_matrix(X, kernel_type):
+    k = lambda x1, x2: kernel(x1, x2, kernel_type)
+    #TODO: because of assume_normalized_kernel the kernel between identical datapoints is not calculated -> possibly needed when doing simulations with noise
+    return qml.kernels.square_kernel_matrix(X, k, assume_normalized_kernel=True)

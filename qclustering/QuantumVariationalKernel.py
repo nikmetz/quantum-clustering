@@ -1,10 +1,10 @@
 import pennylane as qml
-import CostFunctions
+import qclustering.CostFunctions as CostFunctions
 from pennylane import numpy as np
-from KernelKMeans import KernelKMeans
+from qclustering.KernelKMeans import KernelKMeans
 from sklearn import metrics
-from Ansatz import ansatz2
-from utils import simple_plot
+from qclustering.Ansatz import ansatz2
+from qclustering.utils import simple_plot
 
 def fixed_value_params(value, num_wires, num_layers, params_per_wire):
     return np.full((num_layers, num_wires, params_per_wire), value)

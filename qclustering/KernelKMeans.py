@@ -4,16 +4,15 @@
 # License: BSD 3 clause
 
 import autograd.numpy as np
-from numpy.lib.function_base import angle
 import pennylane as qml
 
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.utils import check_random_state
 
-from utils import visualize
-from utils import vector_change
-from QuantumKernel import kernel
+from qclustering.utils import visualize
+from qclustering.utils import vector_change
+from qclustering.QuantumKernel import kernel
 
 def euc(x1, x2):
     return np.linalg.norm(x1-x2)

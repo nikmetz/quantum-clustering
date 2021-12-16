@@ -1,9 +1,9 @@
 from typing import Tuple, Optional, Union
 
-from datasets.circles import circles
-from datasets.iris import iris
-from datasets.mnist import mnist
-from datasets.utils import DataSet, pad_data
+from qclustering.datasets.circles import circles
+from qclustering.datasets.iris import iris
+from qclustering.datasets.mnist import mnist
+from qclustering.datasets.utils import DataSet, pad_data
 
 
 def load_data(

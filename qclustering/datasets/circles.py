@@ -1,5 +1,5 @@
 from sklearn import datasets
-from datasets.utils import one_hot, DataSet
+from qclustering.datasets.utils import one_hot, DataSet
 
 
 def circles(train_size=100, test_size=50, shuffle=True) -> DataSet:

@@ -1,6 +1,7 @@
 from distutils.core import setup
 
 setup(
-    name='QuantumClustering',
-    version='1.0'
+    name='quantum-clustering',
+    version='1.0',
+    packages=['qclustering', 'qclustering.datasets'],
 )

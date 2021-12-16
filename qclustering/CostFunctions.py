@@ -1,7 +1,6 @@
 from pennylane import numpy as np
-from utils import vector_change
+from qclustering.utils import vector_change
 import pennylane as qml
-import random
 
 def multiclass_target_alignment(
     X,

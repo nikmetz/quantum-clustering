@@ -1,6 +1,6 @@
 from pennylane import numpy as np
 from sklearn import datasets
-from datasets.utils import one_hot, DataSet
+from qclustering.datasets.utils import DataSet
 
 MAX_SAMPLES = 150
 
