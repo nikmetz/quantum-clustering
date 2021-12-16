@@ -67,9 +67,9 @@ class QuantumVariationalKernel():
             for idx, subset in enumerate(parts):
                 #TODO: should probably find a better solution for this mess
                 if self.cost_func == "KTA-supervised":
-                    cost = lambda _params: -qml.kernels.target_alignment(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params))
+                    cost = lambda _params: -CostFunctions.multiclass_target_alignment(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), 2)
                     self.params, c = opt.step_and_cost(cost, self.params)
-                    cost_val = qml.kernels.target_alignment(val_X, val_Y, self.kernel)
+                    cost_val = CostFunctions.multiclass_target_alignment(val_X, val_Y, self.kernel, 2)
                     print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
                     val_values.append((epoch*batches+idx, cost_val))
                 elif self.cost_func == "triplet-loss-supervised":
