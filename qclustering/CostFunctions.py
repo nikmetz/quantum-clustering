@@ -41,13 +41,17 @@ def triplet_loss(X, labels, alpha, dist_func):
     for anchor_idx, anchor in enumerate(X):
         current = K[anchor_idx]
         #distance between anchor and the sample with a different label than the anchor and biggest distance to the anchor
-        dist_anchor_negative = current[labels != labels[anchor_idx]].max()
+        negative_mask = labels != labels[anchor_idx]
+        if len(current[negative_mask]) > 0:
+            dist_anchor_negative = current[negative_mask].max()
+        else:
+            dist_anchor_negative = current.max()
 
         positive_mask = labels == labels[anchor_idx]
         if len(current[positive_mask]) > 1:
-            #if there is more than one sample with one label, don't choose the anchor as the positive example
+            #if there is more than one sample with the same label, don't choose the anchor as the positive example
             positive_mask = vector_change(positive_mask, False, anchor_idx)
-        #distance between anchor and the sample with the same label as the anchor and smallest distance to the anchor
+        #distance between anchor and the sample with the same label and smallest distance to the anchor
         dist_anchor_positive = current[positive_mask].min()
         
         sum = sum + max(dist_anchor_positive - dist_anchor_negative + alpha, 0)
