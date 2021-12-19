@@ -3,17 +3,17 @@ import pennylane as qml
 def layer(x, params, wires, i0=0, inc=1):
     """Building block of the embedding ansatz"""
     i = i0
-    for j, wire in enumerate(wires):
-        qml.Hadamard(wires=[wire])
-        qml.RX(x[i % len(x)], wires=[wire])
+    for wire in range(wires):
+        qml.Hadamard(wires=wire)
+        qml.RX(x[i % len(x)], wires=wire)
         i += inc
-        qml.RY(params[j, 0], wires=[wire])
+        qml.RY(params[wire, 0], wires=wire)
 
-    qml.broadcast(unitary=qml.CRZ, pattern="ring", wires=wires, parameters=params[:][1])
+    qml.broadcast(unitary=qml.CRZ, pattern="ring", wires=range(wires), parameters=params[:, 1])
 
 def ansatz(x, params, wires):
     for j, layer_params in enumerate(params):
-        layer(x, layer_params, wires, i0=j * len(wires))
+        layer(x, layer_params, wires, i0=j * wires)
 
 def ansatz2(data, params, wires):
     for layer in range(3):

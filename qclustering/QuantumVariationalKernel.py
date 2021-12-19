@@ -38,7 +38,7 @@ class QuantumVariationalKernel():
         train_size = kwargs.get('train_size', 20)
         batch_size = kwargs.get('batch_size', 5)
         val_size = kwargs.get('val_size', 5)
-        epochs = kwargs.get('epochs', 10)
+        epochs = kwargs.get('epochs', 500)
         learning_rate = kwargs.get('learning_rate', 0.2)
         learning_rate_decay = kwargs.get('learning_rate_decay', 0.01)
 
@@ -73,7 +73,11 @@ class QuantumVariationalKernel():
                     print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
                     val_values.append((epoch*batches+idx, cost_val))
                 elif self.cost_func == "triplet-loss-supervised":
-                    cost = lambda _params: CostFunctions.triplet_loss(train_X[subset], train_Y[subset], 0.5, lambda x1, x2: self.kernel_with_params(x1, x2, _params))
+                    cost = lambda _params: CostFunctions.triplet_loss(train_X[subset], train_Y[subset], 1, lambda x1, x2: self.kernel_with_params(x1, x2, _params))
+                    self.params, c = opt.step_and_cost(cost, self.params)
+                    cost_val = CostFunctions.triplet_loss(val_X, val_Y, 1, self.kernel)
+                    print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
+                    val_values.append((epoch*batches+idx, cost_val))
                 elif self.cost_func == "davies-bouldin":
                     kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
                     cost = lambda _params: metrics.davies_bouldin_score(
@@ -90,7 +94,7 @@ class QuantumVariationalKernel():
                 else:
                     pass
 
-            if (epoch + 1) % 9 == 0:
+            if (epoch + 1) % 25 == 0:
                 print("in")
                 km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
                 lab = km.fit(X, self.kernel).labels_
@@ -123,6 +127,6 @@ if __name__ == '__main__':
     layers = 3
 
     init_params = random_params(num_wires=wires, num_layers=layers, params_per_wire=2)
-    qvk = QuantumVariationalKernel(wires=wires, ansatz=ansatz2, init_params=init_params, cost_func="KTA-supervised")
+    qvk = QuantumVariationalKernel(wires=wires, ansatz=ansatz2, init_params=init_params, cost_func="triplet-loss-supervised")
 
     qvk.train(data.train_data, data.train_target)
