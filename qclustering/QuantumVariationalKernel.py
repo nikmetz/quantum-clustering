@@ -6,7 +6,7 @@ from sklearn import metrics
 from qclustering.utils import simple_plot
 
 class QuantumVariationalKernel():
-    def __init__(self, wires, ansatz, init_params, cost_func, device="default.qubit", shots=None):
+    def __init__(self, wires, ansatz, init_params, cost_func, device, shots):
         self.device = qml.device(device, wires=wires, shots=shots)
         self.ansatz = ansatz
         self.qnode = qml.QNode(self.kernel_circuit, self.device)
@@ -32,6 +32,8 @@ class QuantumVariationalKernel():
         learning_rate = kwargs.get('learning_rate', 0.2)
         learning_rate_decay = kwargs.get('learning_rate_decay', 0.01)
         clustering_interval = kwargs.get("clustering_interval", 100)
+        opt_name = kwargs.get("optimizer", "GradientDescent")
+        num_classes = kwargs.get("num_classes", 2)
 
         train_X, train_Y = data.train_data, data.train_target
         val_X, val_Y = data.validation_data, data.validation_target
@@ -42,7 +44,8 @@ class QuantumVariationalKernel():
 
         for epoch in range(epochs):
             lrate = learning_rate * (1 / (1+learning_rate_decay*epoch))
-            opt = qml.GradientDescentOptimizer(lrate)
+            if opt_name == "GradientDescent":
+                opt = qml.GradientDescentOptimizer(lrate)
             print("Epoch: {}, rate: {}".format(epoch, lrate))
 
             #TODO: is using a random partition here a good idea?
@@ -53,9 +56,9 @@ class QuantumVariationalKernel():
             for idx, subset in enumerate(parts):
                 #TODO: should probably find a better solution for this mess
                 if self.cost_func == "KTA-supervised":
-                    cost = lambda _params: -CostFunctions.multiclass_target_alignment(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), 2)
+                    cost = lambda _params: -CostFunctions.multiclass_target_alignment(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), num_classes)
                     self.params, c = opt.step_and_cost(cost, self.params)
-                    cost_val = CostFunctions.multiclass_target_alignment(val_X, val_Y, self.kernel, 2)
+                    cost_val = CostFunctions.multiclass_target_alignment(val_X, val_Y, self.kernel, num_classes)
                     print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
                     val_values.append((epoch*batches+idx, cost_val))
                 elif self.cost_func == "triplet-loss-supervised":
@@ -81,9 +84,9 @@ class QuantumVariationalKernel():
                     pass
 
             if (epoch + 1) % clustering_interval == 0:
-                km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
+                km = KernelKMeans(n_clusters=num_classes, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
                 lab = km.fit(test_X, self.kernel).labels_
-                print(lab)
+
                 davies = metrics.davies_bouldin_score(test_X, lab)
                 calinski = metrics.calinski_harabasz_score(test_X, lab)
                 if test_Y is not None:
@@ -92,6 +95,7 @@ class QuantumVariationalKernel():
                 else:
                     rand_index = 0
                     mutual_info = 0
+
                 print("Clustering test! Epoch {}: davies-bouldin: {}, calinski-harabasz: {}, rand: {}, info: {}".format(epoch, davies, calinski, rand_index, mutual_info))
                 clustering_values.append((epoch*batches, davies, calinski, rand_index, mutual_info))
 
