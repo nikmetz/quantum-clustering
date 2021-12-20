@@ -5,13 +5,7 @@ from qclustering.KernelKMeans import KernelKMeans
 from sklearn import metrics
 from qclustering.Ansatz import ansatz2
 from qclustering.utils import simple_plot
-
-def fixed_value_params(value, num_wires, num_layers, params_per_wire):
-    return np.full((num_layers, num_wires, params_per_wire), value)
-
-def random_params(num_wires, num_layers, params_per_wire):
-    """Generate random variational parameters in the shape for the ansatz."""
-    return np.random.uniform(0, 2 * np.pi, (num_layers, num_wires, params_per_wire))
+from qclustering.utils import random_params
 
 class QuantumVariationalKernel():
     def __init__(self, wires, ansatz, init_params, cost_func, device="default.qubit", shots=None):
@@ -41,6 +35,7 @@ class QuantumVariationalKernel():
         epochs = kwargs.get('epochs', 500)
         learning_rate = kwargs.get('learning_rate', 0.2)
         learning_rate_decay = kwargs.get('learning_rate_decay', 0.01)
+        clustering_interval = kwargs.get("clustering_interval", 100)
 
         num_samples = X.shape[0]
         if train_size+val_size > num_samples:
@@ -94,7 +89,7 @@ class QuantumVariationalKernel():
                 else:
                     pass
 
-            if (epoch + 1) % 25 == 0:
+            if (epoch + 1) % clustering_interval == 0:
                 print("in")
                 km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
                 lab = km.fit(X, self.kernel).labels_
@@ -110,7 +105,7 @@ class QuantumVariationalKernel():
                 print("Clustering test! Epoch {}: davies-bouldin: {}, calinski-harabasz: {}, rand: {}, info: {}".format(epoch, davies, calinski, rand_index, mutual_info))
                 clustering_values.append((epoch*batches, davies, calinski, rand_index, mutual_info))
 
-        simple_plot([x[0] for x in val_values], [x[1] for x in val_values], "Steps", "KTA", "kta.png", [-1, 1])
+        simple_plot([x[0] for x in val_values], [x[1] for x in val_values], "Steps", "Cost", "loss.png", [-1, 1])
 
         xs = [x[0] for x in clustering_values]
         simple_plot(xs, [x[1] for x in clustering_values], "Steps", "Davies", "davies.png")

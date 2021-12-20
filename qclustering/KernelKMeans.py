@@ -7,11 +7,8 @@ import autograd.numpy as np
 import pennylane as qml
 
 from sklearn.base import BaseEstimator, ClusterMixin
-from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.utils import check_random_state
-
 from qclustering.utils import visualize
-from qclustering.utils import vector_change
 from qclustering.QuantumKernel import kernel
 
 def euc(x1, x2):
@@ -114,7 +111,7 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
                 KK = K[mask][:, mask]  # K[mask, mask] does not work.
                 dist_j = np.sum(np.outer(sw[mask], sw[mask]) * KK / denomsq)
                 #within_distances[j] = dist_j
-                within_distances = vector_change(within_distances, dist_j, j)
+                within_distances = np.concatenate((np.concatenate((within_distances[:j], [dist_j])), within_distances[j+1:]))
                 #dist[:, j] = dist[:, j] + dist_j
                 dist_vec = dist_mat[:, j] + dist_j
             else:

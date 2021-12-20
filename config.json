@@ -1,0 +1,21 @@
+{
+    "wires": 4,
+    "layers": 3,
+    "params_per_wire": 2,
+    "cost_func": "KTA-supervised",
+    "cost_func_params":{
+        "alpha": 1
+    },
+    "device": "default.qubit",
+    "init_params": "random",
+    "ansatz": "ansatz2",
+    "dataset": "iris",
+    "train_size": 20,
+    "test_size": 20,
+    "batch_size": 5,
+    "val_size": 5,
+    "epochs": 500,
+    "learning_rate": 0.2,
+    "learning_rate_decay": 0.01,
+    "clustering_interval": 100
+}

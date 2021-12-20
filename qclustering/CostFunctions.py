@@ -1,5 +1,4 @@
 from pennylane import numpy as np
-from qclustering.utils import vector_change
 import pennylane as qml
 
 def multiclass_target_alignment(
@@ -50,7 +49,7 @@ def triplet_loss(X, labels, alpha, dist_func):
         positive_mask = labels == labels[anchor_idx]
         if len(current[positive_mask]) > 1:
             #if there is more than one sample with the same label, don't choose the anchor as the positive example
-            positive_mask = vector_change(positive_mask, False, anchor_idx)
+            positive_mask = np.concatenate((np.concatenate((positive_mask[:anchor_idx], [False])), positive_mask[anchor_idx+1:]))
         #distance between anchor and the sample with the same label and smallest distance to the anchor
         dist_anchor_positive = current[positive_mask].min()
         

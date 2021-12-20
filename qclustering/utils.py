@@ -1,6 +1,13 @@
 import autograd.numpy as np
 import matplotlib.pyplot as plt
 
+def fixed_value_params(value, num_wires, num_layers, params_per_wire):
+    return np.full((num_layers, num_wires, params_per_wire), value)
+
+def random_params(num_wires, num_layers, params_per_wire):
+    """Generate random variational parameters in the shape for the ansatz."""
+    return np.random.uniform(0, 2 * np.pi, (num_layers, num_wires, params_per_wire))
+
 def visualize(X, true_labels, labels):
     mark = [".", "^", "s", "P", ""]
     colors = np.array(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'])
@@ -23,6 +30,3 @@ def simple_plot(xs, ys, xlabel, ylabel, filename, ylimit=None):
         ax.set_ylim(ylimit)
     plt.savefig(filename)
     return
-
-def vector_change(vec, value, index):
-    return np.concatenate((np.concatenate((vec[:index], [value])), vec[index+1:]))
