@@ -3,9 +3,7 @@ import qclustering.CostFunctions as CostFunctions
 from pennylane import numpy as np
 from qclustering.KernelKMeans import KernelKMeans
 from sklearn import metrics
-from qclustering.Ansatz import ansatz2
 from qclustering.utils import simple_plot
-from qclustering.utils import random_params
 
 class QuantumVariationalKernel():
     def __init__(self, wires, ansatz, init_params, cost_func, device="default.qubit", shots=None):
@@ -28,23 +26,16 @@ class QuantumVariationalKernel():
     def kernel_with_params(self, x1, x2, params):
         return 1 - self.qnode(x1, x2, params)[0]
 
-    def train(self, X, Y=None, **kwargs):
-        train_size = kwargs.get('train_size', 20)
+    def train(self, data, **kwargs):
         batch_size = kwargs.get('batch_size', 5)
-        val_size = kwargs.get('val_size', 5)
         epochs = kwargs.get('epochs', 500)
         learning_rate = kwargs.get('learning_rate', 0.2)
         learning_rate_decay = kwargs.get('learning_rate_decay', 0.01)
         clustering_interval = kwargs.get("clustering_interval", 100)
 
-        num_samples = X.shape[0]
-        if train_size+val_size > num_samples:
-            raise ValueError("Provided {} samples, but required for train and validation set are {} samples.".format(num_samples, train_size+val_size))
-
-        train_X, val_X = X[:train_size], X[train_size:train_size+val_size]
-        if Y is not None:
-            #Semi-supervised -> Y values
-            train_Y, val_Y = Y[:train_size], Y[train_size:train_size+val_size]
+        train_X, train_Y = data.train_data, data.train_target
+        val_X, val_Y = data.validation_data, data.validation_target
+        test_X, test_Y = data.test_data, data.test_target
 
         val_values = []
         clustering_values = []
@@ -56,7 +47,7 @@ class QuantumVariationalKernel():
 
             #TODO: is using a random partition here a good idea?
             perm = np.random.permutation(train_X.shape[0])
-            batches = int(train_size/batch_size)
+            batches = int(train_X.shape[0]/batch_size)
             parts = [perm[i::batches] for i in range(batches)]
 
             for idx, subset in enumerate(parts):
@@ -90,15 +81,14 @@ class QuantumVariationalKernel():
                     pass
 
             if (epoch + 1) % clustering_interval == 0:
-                print("in")
                 km = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
-                lab = km.fit(X, self.kernel).labels_
+                lab = km.fit(test_X, self.kernel).labels_
                 print(lab)
-                davies = metrics.davies_bouldin_score(X, lab)
-                calinski = metrics.calinski_harabasz_score(X, lab)
-                if Y is not None:
-                    rand_index = metrics.adjusted_rand_score(Y, lab)
-                    mutual_info = metrics.adjusted_mutual_info_score(Y, lab)
+                davies = metrics.davies_bouldin_score(test_X, lab)
+                calinski = metrics.calinski_harabasz_score(test_X, lab)
+                if test_Y is not None:
+                    rand_index = metrics.adjusted_rand_score(test_Y, lab)
+                    mutual_info = metrics.adjusted_mutual_info_score(test_Y, lab)
                 else:
                     rand_index = 0
                     mutual_info = 0
@@ -112,16 +102,3 @@ class QuantumVariationalKernel():
         simple_plot(xs, [x[2] for x in clustering_values], "Steps", "Calinski", "calinski.png")
         simple_plot(xs, [x[3] for x in clustering_values], "Steps", "Rand Index", "rand_index.png")
         simple_plot(xs, [x[4] for x in clustering_values], "Steps", "Mutual Info", "mutual_info.png")
-
-if __name__ == '__main__':
-    from datasets.iris import iris
-    np.random.seed(42)
-    data = iris(train_size=25, test_size=0, shuffle=True)
-
-    wires = 4
-    layers = 3
-
-    init_params = random_params(num_wires=wires, num_layers=layers, params_per_wire=2)
-    qvk = QuantumVariationalKernel(wires=wires, ansatz=ansatz2, init_params=init_params, cost_func="triplet-loss-supervised")
-
-    qvk.train(data.train_data, data.train_target)

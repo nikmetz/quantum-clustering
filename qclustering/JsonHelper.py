@@ -12,6 +12,9 @@ def run_json_config(js):
     cost_func = js.get("cost_func")
     device = js.get("device", "default.qubit")
     shots = js.get("shots", None)
+    train_size = js.get("train_size", 20)
+    val_size = js.get("val_size", 5)
+    test_size = js.get("test_size", 25)
 
     if js.get("init_params") == "random":
         init_params = random_params(wires, layers, params_per_wire)
@@ -26,8 +29,8 @@ def run_json_config(js):
     qvk = QuantumVariationalKernel(wires, ansatz, init_params, cost_func, device, shots)
 
     if js.get("dataset") == "iris":
-        data = iris(train_size=25, test_size=0, shuffle=True)
+        data = iris(train_size=train_size, val_size=val_size, test_size=test_size, shuffle=True)
 
-    qvk.train(data.train_data, data.train_target, **js)
+    qvk.train(data, **js)
 
     return qvk
