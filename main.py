@@ -1,10 +1,6 @@
-import json
 from pennylane import numpy as np
-from qclustering.JsonHelper import run_json_config
+from qclustering.JsonHelper import run_json_file
 
 np.random.seed(42)
 
-with open("config.json") as f:
-    data = json.load(f)
-
-qvk = run_json_config(data)
+qvk = run_json_file("config.json")

@@ -1,11 +1,24 @@
 import qclustering.Ansatz as Ansatz
+import json
+import os
+import shutil
 from qclustering.datasets.iris import iris
 from qclustering.QuantumVariationalKernel import QuantumVariationalKernel
 from qclustering.utils import random_params
 from qclustering.utils import fixed_value_params
 from pennylane import numpy as np
 
-def run_json_config(js):
+def run_json_file(file):
+    with open(file) as f:
+        js = json.load(f)
+
+    folder_name = os.path.basename(file).split(".")[0]+"/"
+    os.makedirs(folder_name, exist_ok=True)
+    shutil.copy(file, folder_name)
+
+    run_json_config(js, folder_name)
+
+def run_json_config(js, path=""):
     wires = js.get("wires")
     layers = js.get("layers")
     params_per_wire = js.get("params_per_wire")
@@ -31,6 +44,6 @@ def run_json_config(js):
     if js.get("dataset") == "iris":
         data = iris(train_size=train_size, val_size=val_size, test_size=test_size, shuffle=True)
 
-    qvk.train(data, **js)
+    qvk.train(data, path=path, **js)
 
     return qvk

@@ -34,6 +34,7 @@ class QuantumVariationalKernel():
         clustering_interval = kwargs.get("clustering_interval", 100)
         opt_name = kwargs.get("optimizer", "GradientDescent")
         num_classes = kwargs.get("num_classes", 2)
+        path = kwargs.get("path")
 
         train_X, train_Y = data.train_data, data.train_target
         val_X, val_Y = data.validation_data, data.validation_target
@@ -99,10 +100,10 @@ class QuantumVariationalKernel():
                 print("Clustering test! Epoch {}: davies-bouldin: {}, calinski-harabasz: {}, rand: {}, info: {}".format(epoch, davies, calinski, rand_index, mutual_info))
                 clustering_values.append((epoch*batches, davies, calinski, rand_index, mutual_info))
 
-        simple_plot([x[0] for x in val_values], [x[1] for x in val_values], "Steps", "Cost", "loss.png", [-1, 1])
+        simple_plot([x[0] for x in val_values], [x[1] for x in val_values], "Steps", "Cost", path+"loss.png", [-1, 1])
 
         xs = [x[0] for x in clustering_values]
-        simple_plot(xs, [x[1] for x in clustering_values], "Steps", "Davies", "davies.png")
-        simple_plot(xs, [x[2] for x in clustering_values], "Steps", "Calinski", "calinski.png")
-        simple_plot(xs, [x[3] for x in clustering_values], "Steps", "Rand Index", "rand_index.png")
-        simple_plot(xs, [x[4] for x in clustering_values], "Steps", "Mutual Info", "mutual_info.png")
+        simple_plot(xs, [x[1] for x in clustering_values], "Steps", "Davies", path+"davies.png")
+        simple_plot(xs, [x[2] for x in clustering_values], "Steps", "Calinski", path+"calinski.png")
+        simple_plot(xs, [x[3] for x in clustering_values], "Steps", "Rand Index", path+"rand_index.png")
+        simple_plot(xs, [x[4] for x in clustering_values], "Steps", "Mutual Info", path+"mutual_info.png")
