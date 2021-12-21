@@ -5,7 +5,8 @@
     "shots": null,
     "cost_func": "KTA-supervised",
     "cost_func_params":{
-        "alpha": 1
+        "alpha": 1,
+        "strategy": "minmax"
     },
     "device": "default.qubit",
     "init_params": "random",
@@ -16,10 +17,10 @@
     "test_size": 20,
     "batch_size": 5,
     "val_size": 5,
-    "epochs": 500,
+    "epochs": 10,
     "learning_rate": 0.2,
     "learning_rate_decay": 0.01,
-    "clustering_interval": 100,
+    "clustering_interval": 10,
     "optimizer": "GradientDescent",
     "optimizer_params": {
 
