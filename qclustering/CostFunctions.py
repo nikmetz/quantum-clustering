@@ -57,8 +57,10 @@ def triplet_loss(X, labels, dist_func, **kwargs):
             
         #calculate distance between anchor and positive/negative samples based on the chosen strategy
         if strategy == "random":
-            dist_anchor_positive = dist_func(anchor, np.random.choice(X[positive_mask]))
-            dist_anchor_negative = dist_func(anchor, np.random.choice(X[negative_mask]))
+            pos_idx = np.random.randint(X[positive_mask].shape[0], size=1)[0]
+            neg_idx = np.random.randint(X[negative_mask].shape[0], size=1)[0]
+            dist_anchor_positive = dist_func(anchor, X[positive_mask][pos_idx])
+            dist_anchor_negative = dist_func(anchor, X[negative_mask][neg_idx])
         elif strategy == "minmax":
             current = K[anchor_idx]
             dist_anchor_positive = current[positive_mask].min()
