@@ -90,6 +90,8 @@ class QuantumVariationalKernel():
             if (epoch + 1) % clustering_interval == 0:
                 km = KernelKMeans(n_clusters=num_classes, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
                 lab = km.fit(test_X, self.kernel).labels_
+                print(lab)
+                print(test_Y)
 
                 davies = metrics.davies_bouldin_score(test_X, lab)
                 calinski = metrics.calinski_harabasz_score(test_X, lab)
