@@ -2,6 +2,7 @@ import qclustering.Ansatz as Ansatz
 import json
 import os
 import shutil
+import qclustering.datasets
 from qclustering.datasets.iris import iris
 from qclustering.QuantumVariationalKernel import QuantumVariationalKernel
 from qclustering.utils import random_params
@@ -25,9 +26,6 @@ def run_json_config(js, path=""):
     cost_func = js.get("cost_func")
     device = js.get("device", "default.qubit")
     shots = js.get("shots", None)
-    train_size = js.get("train_size", 20)
-    val_size = js.get("val_size", 5)
-    test_size = js.get("test_size", 25)
     numpy_seed = js.get("numpy_seed", 1546)
 
     np.random.seed(numpy_seed)
@@ -44,8 +42,7 @@ def run_json_config(js, path=""):
 
     qvk = QuantumVariationalKernel(wires, ansatz, init_params, cost_func, device, shots)
 
-    if js.get("dataset") == "iris":
-        data = iris(train_size=train_size, val_size=val_size, test_size=test_size, shuffle=True)
+    data = qclustering.datasets.load_data(js.get("dataset"), **js.get("dataset_params", "{}"))
 
     qvk.train(data, path=path, **js)
 

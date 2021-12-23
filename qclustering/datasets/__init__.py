@@ -1,6 +1,4 @@
-from typing import Tuple, Union
-
-from qclustering.datasets.generated import circles
+from qclustering.datasets.generated import generate
 from qclustering.datasets.iris import iris
 from qclustering.datasets.mnist import mnist
 from qclustering.datasets.utils import DataSet
@@ -8,13 +6,7 @@ from qclustering.datasets.utils import DataSet
 
 def load_data(
     dataset: str,
-    train_size: int = 100,
-    test_size: int = 50,
-    val_size: int = 0,
-    shuffle: Union[bool, int] = 1337,
-    num_classes: int = 2,
-    classes: Tuple[int, ...] = (6, 9),
-    features: int = 4,
+    **dataset_params
 ) -> DataSet:
     """
     Returns the data for the requested ``dataset``.
@@ -30,17 +22,11 @@ def load_data(
     :raises ValueError: Raised if a not supported dataset is requested
     """
     if dataset == "iris":
-        return iris(train_size=train_size, test_size=test_size, val_size=val_size, shuffle=shuffle, num_classes=num_classes)
+        return iris(**dataset_params)
     elif dataset == "mnist":
-        return mnist(
-            wires=features,
-            classes=classes,
-            train_size=train_size,
-            test_size=test_size,
-            val_size=val_size,
-            shuffle=shuffle,
-        )
-    elif dataset == "circles":
-        return circles(train_size=train_size, test_size=test_size, val_size=val_size, shuffle=shuffle)
+        #TODO
+        pass
+    elif dataset in ["circles", "moons", "classification", "blobs"]:
+        return generate(dataset=dataset, **dataset_params)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
