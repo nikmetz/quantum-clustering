@@ -1,6 +1,6 @@
 from typing import Tuple, Union
 
-from qclustering.datasets.circles import circles
+from qclustering.datasets.generated import circles
 from qclustering.datasets.iris import iris
 from qclustering.datasets.mnist import mnist
 from qclustering.datasets.utils import DataSet
@@ -41,6 +41,6 @@ def load_data(
             shuffle=shuffle,
         )
     elif dataset == "circles":
-        return circles(train_size=train_size, test_size=test_size, shuffle=shuffle)
+        return circles(train_size=train_size, test_size=test_size, val_size=val_size, shuffle=shuffle)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
