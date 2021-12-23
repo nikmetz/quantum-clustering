@@ -1,20 +1,20 @@
-from typing import Tuple, Optional, Union
+from typing import Tuple, Union
 
 from qclustering.datasets.circles import circles
 from qclustering.datasets.iris import iris
 from qclustering.datasets.mnist import mnist
-from qclustering.datasets.utils import DataSet, pad_data
+from qclustering.datasets.utils import DataSet
 
 
 def load_data(
     dataset: str,
     train_size: int = 100,
     test_size: int = 50,
-    validation_size: int = 0,
+    val_size: int = 0,
     shuffle: Union[bool, int] = 1337,
+    num_classes: int = 2,
     classes: Tuple[int, ...] = (6, 9),
-    wires: int = 4,
-    target_length: Optional[int] = None,
+    features: int = 4,
 ) -> DataSet:
     """
     Returns the data for the requested ``dataset``.
@@ -22,48 +22,25 @@ def load_data(
         Available datasets are: iris, mnist and circles.
     :param train_size: Size of the training dataset
     :param test_size: Size of the testing dataset
+    :param val_size: Size of the validation dataset
     :param shuffle: if the dataset should be shuffled, used also as a seed
+    :param num_classes: number of different classes that should be included
     :param classes: which numbers of the mnist dataset should be included
-    :param wires: number of wires in the circuit
-    :param target_length: Normalised length of target arrays
+    :param features: number of features in the data
     :raises ValueError: Raised if a not supported dataset is requested
     """
     if dataset == "iris":
-        result = iris(train_size=train_size, test_size=test_size, shuffle=shuffle)
+        return iris(train_size=train_size, test_size=test_size, val_size=val_size, shuffle=shuffle, num_classes=num_classes)
     elif dataset == "mnist":
-        result = mnist(
-            wires=wires,
+        return mnist(
+            wires=features,
             classes=classes,
             train_size=train_size,
             test_size=test_size,
-            validation_size=validation_size,
+            val_size=val_size,
             shuffle=shuffle,
         )
     elif dataset == "circles":
-        result = circles(train_size=train_size, test_size=test_size, shuffle=shuffle)
+        return circles(train_size=train_size, test_size=test_size, shuffle=shuffle)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
-    if target_length is None:
-        target_length = 2 ** wires
-    difference = target_length - result.train_target.shape[1]
-    assert difference >= 0, (
-        f"Target length ({target_length}) must support at least "
-        f"{result.train_target.shape[1]} classes"
-    )
-    if difference > 0:
-        # extend train, validation and test target arrays
-        new_train_target = pad_data(result.train_target, 1, difference)
-        new_test_target = pad_data(result.test_target, 1, difference)
-        if result.validation_target is not None and len(result.validation_target) > 0:
-            new_validation_target = pad_data(result.validation_target, 1, difference)
-        else:
-            new_validation_target = None
-        result = DataSet(
-            result.train_data,
-            new_train_target,
-            result.validation_data,
-            new_validation_target,
-            result.test_data,
-            new_test_target,
-        )
-    return result

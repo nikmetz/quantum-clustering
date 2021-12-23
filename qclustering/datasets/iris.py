@@ -5,13 +5,15 @@ from qclustering.datasets.utils import DataSet
 MAX_SAMPLES = 150
 
 
-def iris(train_size=95, val_size=5, test_size=50, shuffle=True) -> DataSet:
-    train_size = min(train_size, MAX_SAMPLES)
+def iris(train_size=95, val_size=5, test_size=50, shuffle=True, num_classes=3) -> DataSet:
     if train_size + test_size + val_size > MAX_SAMPLES:
-        test_size = MAX_SAMPLES - train_size
+        raise ValueError("Requested too many samples from the iris dataset. Maximum is: {}, but {} were requested.".format(MAX_SAMPLES, train_size + test_size + val_size))
     data, target = datasets.load_iris(return_X_y=True)
-    mask = [True if y == 0 or y == 1 else False for y in target]
-    data, target = data[mask], target[mask]
+    if num_classes == 2:
+        if train_size + test_size + val_size > 100:
+            raise ValueError("Requested too many samples from the iris dataset with two classes. Maximum is: {}, but {} were requested.".format(100, train_size + test_size + val_size))
+        mask = [True if y == 0 or y == 1 else False for y in target]
+        data, target = data[mask], target[mask]
 
     if shuffle:
         perm = np.random.permutation(data.shape[0])

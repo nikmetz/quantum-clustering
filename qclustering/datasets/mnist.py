@@ -74,13 +74,13 @@ def mnist(
     wires: int = 4,
     classes=(6, 9),
     train_size: int = 100,
-    validation_size: int = 0,
+    val_size: int = 0,
     test_size: int = 50,
     shuffle: Union[bool, int] = 1337,
 ) -> DataSet:
     (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
-    train_size = min(train_size, MAX_TRAIN_SAMPLES - validation_size)
-    validation_size = min(validation_size, MAX_TRAIN_SAMPLES - train_size)
+    train_size = min(train_size, MAX_TRAIN_SAMPLES - val_size)
+    validation_size = min(val_size, MAX_TRAIN_SAMPLES - train_size)
     test_size = min(test_size, MAX_TEST_SAMPLES)
 
     if shuffle:
