@@ -28,6 +28,9 @@ def run_json_config(js, path=""):
     train_size = js.get("train_size", 20)
     val_size = js.get("val_size", 5)
     test_size = js.get("test_size", 25)
+    numpy_seed = js.get("numpy_seed", 1546)
+
+    np.random.seed(numpy_seed)
 
     if js.get("init_params") == "random":
         init_params = random_params(wires, layers, params_per_wire)
