@@ -3,7 +3,8 @@ import json
 import os
 import shutil
 import qclustering.datasets
-from qclustering.datasets.iris import iris
+import time
+import datetime
 from qclustering.QuantumVariationalKernel import QuantumVariationalKernel
 from qclustering.utils import random_params
 from qclustering.utils import fixed_value_params
@@ -13,7 +14,8 @@ def run_json_file(file):
     with open(file) as f:
         js = json.load(f)
 
-    folder_name = os.path.basename(file).split(".")[0]+"/"
+    st = datetime.datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d_%H-%M-%S")
+    folder_name = os.path.basename(file).split(".")[0] + "_" + st + "/"
     os.makedirs(folder_name, exist_ok=True)
     shutil.copy(file, folder_name)
 
