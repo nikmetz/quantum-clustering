@@ -8,6 +8,7 @@ import datetime
 from qclustering.QuantumVariationalKernel import QuantumVariationalKernel
 from qclustering.utils import random_params
 from qclustering.utils import fixed_value_params
+from qclustering.utils import get_params
 from pennylane import numpy as np
 
 def run_json_file(file):
@@ -32,10 +33,7 @@ def run_json_config(js, path=""):
 
     np.random.seed(numpy_seed)
 
-    if js.get("init_params") == "random":
-        init_params = random_params(wires, layers, params_per_wire)
-    elif js.get("init_params") == "fixed":
-        init_params = fixed_value_params(np.pi, wires, layers, params_per_wire)
+    init_params = get_params(strategy=js.get("init_params"), num_wires=wires, num_layers=layers, params_per_wire=params_per_wire)
 
     if js.get("ansatz") == "ansatz":
         ansatz = Ansatz.ansatz

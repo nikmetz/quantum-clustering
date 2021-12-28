@@ -1,5 +1,14 @@
+from typing import ValuesView
 import autograd.numpy as np
 import matplotlib.pyplot as plt
+
+def get_params(strategy="random", **params):
+    if strategy == "random":
+        return random_params(**params)
+    elif strategy == "fixed":
+        return fixed_value_params(**params)
+    else:
+        return ValueError(f"Unknown parameters initialization strategy: {strategy}")
 
 def fixed_value_params(value, num_wires, num_layers, params_per_wire):
     return np.full((num_layers, num_wires, params_per_wire), value)
