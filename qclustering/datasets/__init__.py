@@ -24,8 +24,7 @@ def load_data(
     if dataset == "iris":
         return iris(**dataset_params)
     elif dataset == "mnist":
-        #TODO
-        pass
+        return mnist(**dataset_params)
     elif dataset in ["circles", "moons", "classification", "blobs"]:
         return generate(dataset=dataset, **dataset_params)
     else:

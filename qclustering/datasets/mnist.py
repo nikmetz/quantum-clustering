@@ -24,8 +24,8 @@ def convert_label(y: int, classes: List[int]) -> List[float]:
     return [1.0 if the_class == y else 0.0 for the_class in classes]
 
 
-def apply_PCA(wires: int, x_train: np.ndarray):
-    pca = PCA(n_components=wires)
+def apply_PCA(features: int, x_train: np.ndarray):
+    pca = PCA(n_components=features)
     pca.fit(x_train)
     return pca
 
@@ -60,7 +60,7 @@ def prepare_data(
     data_index = np.isin(y_data, classes)
     x_data, y_data = x_data[data_index], y_data[data_index]
     x_data, y_data = downscale(x_data, y_data, size)
-    y_data = np.array([convert_label(y, classes) for y in y_data])
+    #y_data = np.array([convert_label(y, classes) for y in y_data])
     try:
         x_data = np.reshape(
             x_data, (x_data.shape[0], x_data.shape[1] * x_data.shape[2])
@@ -71,7 +71,7 @@ def prepare_data(
 
 
 def mnist(
-    wires: int = 4,
+    features: int = 4,
     classes=(6, 9),
     train_size: int = 100,
     val_size: int = 0,
@@ -101,14 +101,14 @@ def mnist(
     )
     x_test, y_test = prepare_data(x_test, y_test, test_size, classes)
 
-    pca = apply_PCA(wires, x_train)
+    pca = apply_PCA(features, x_train)
     x_train = pca.transform(x_train)
-    x_train = minmax_scale(x_train, (0, 2 * np.pi))
+    #x_train = minmax_scale(x_train, (0, 2 * np.pi))
     if len(x_validation) > 0:
         x_validation = pca.transform(x_validation)
-        x_validation = minmax_scale(x_validation, (0, 2 * np.pi))
+        #x_validation = minmax_scale(x_validation, (0, 2 * np.pi))
     x_test = pca.transform(x_test)
-    x_test = minmax_scale(x_test, (0, 2 * np.pi))
+    #x_test = minmax_scale(x_test, (0, 2 * np.pi))
 
     return DataSet(x_train, y_train, x_validation, y_validation, x_test, y_test)
 
