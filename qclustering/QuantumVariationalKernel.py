@@ -33,7 +33,7 @@ class QuantumVariationalKernel():
         learning_rate_decay = kwargs.get('learning_rate_decay', 0.01)
         clustering_interval = kwargs.get("clustering_interval", 100)
         opt_name = kwargs.get("optimizer", "GradientDescent")
-        num_classes = kwargs.get("num_classes", 2)
+        num_classes = max(len(kwargs.get("dataset_params", {}).get("classes", [])), 2)
         path = kwargs.get("path")
 
         train_X, train_Y = data.train_data, data.train_target

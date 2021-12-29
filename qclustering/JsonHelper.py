@@ -6,8 +6,6 @@ import qclustering.datasets
 import time
 import datetime
 from qclustering.QuantumVariationalKernel import QuantumVariationalKernel
-from qclustering.utils import random_params
-from qclustering.utils import fixed_value_params
 from qclustering.utils import get_params
 from pennylane import numpy as np
 
@@ -42,7 +40,7 @@ def run_json_config(js, path=""):
 
     qvk = QuantumVariationalKernel(wires, ansatz, init_params, cost_func, device, shots)
 
-    data = qclustering.datasets.load_data(js.get("dataset"), **js.get("dataset_params", "{}"))
+    data = qclustering.datasets.load_data(js.get("dataset"), **js.get("dataset_params", {}))
 
     qvk.train(data, path=path, **js)
 
