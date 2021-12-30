@@ -3,7 +3,7 @@ import qclustering.CostFunctions as CostFunctions
 from pennylane import numpy as np
 from qclustering.KernelKMeans import KernelKMeans
 from sklearn import metrics
-from qclustering.utils import simple_plot
+from qclustering.Logging import Logging, get_cluster_result
 
 class QuantumVariationalKernel():
     def __init__(self, wires, ansatz, init_params, cost_func, device, shots):
@@ -40,8 +40,7 @@ class QuantumVariationalKernel():
         val_X, val_Y = data.validation_data, data.validation_target
         test_X, test_Y = data.test_data, data.test_target
 
-        val_values = []
-        clustering_values = []
+        logger = Logging()
 
         for epoch in range(epochs):
             lrate = learning_rate * (1 / (1+learning_rate_decay*epoch))
@@ -61,14 +60,14 @@ class QuantumVariationalKernel():
                     self.params, c = opt.step_and_cost(cost, self.params)
                     cost_val = CostFunctions.multiclass_target_alignment(val_X, val_Y, self.kernel, num_classes)
                     print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
-                    val_values.append((epoch*batches+idx, cost_val))
+                    logger.log_training(epoch*batches+idx, c, cost_val)
 
                 elif self.cost_func == "triplet-loss-supervised":
                     cost = lambda _params: CostFunctions.triplet_loss(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), **kwargs.get("cost_func_params", "{}"))
                     self.params, c = opt.step_and_cost(cost, self.params)
                     cost_val = CostFunctions.triplet_loss(val_X, val_Y, self.kernel, **kwargs.get("cost_func_params", "{}"))
                     print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
-                    val_values.append((epoch*batches+idx, cost_val))
+                    logger.log_training(epoch*batches+idx, c, cost_val)
 
                 elif self.cost_func == "davies-bouldin":
                     kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
@@ -93,22 +92,8 @@ class QuantumVariationalKernel():
                 print(lab)
                 print(test_Y)
 
-                davies = metrics.davies_bouldin_score(test_X, lab)
-                calinski = metrics.calinski_harabasz_score(test_X, lab)
-                if test_Y is not None:
-                    rand_index = metrics.adjusted_rand_score(test_Y, lab)
-                    mutual_info = metrics.adjusted_mutual_info_score(test_Y, lab)
-                else:
-                    rand_index = 0
-                    mutual_info = 0
+                result = get_cluster_result(test_X, test_Y, lab)
+                logger.log_clustering(epoch*batches, result)
 
-                print("Clustering test! Epoch {}: davies-bouldin: {}, calinski-harabasz: {}, rand: {}, info: {}".format(epoch, davies, calinski, rand_index, mutual_info))
-                clustering_values.append((epoch*batches, davies, calinski, rand_index, mutual_info))
-
-        simple_plot([x[0] for x in val_values], [x[1] for x in val_values], "Steps", "Cost", path+"loss.png", [-1, 1])
-
-        xs = [x[0] for x in clustering_values]
-        simple_plot(xs, [x[1] for x in clustering_values], "Steps", "Davies", path+"davies.png")
-        simple_plot(xs, [x[2] for x in clustering_values], "Steps", "Calinski", path+"calinski.png")
-        simple_plot(xs, [x[3] for x in clustering_values], "Steps", "Rand Index", path+"rand_index.png")
-        simple_plot(xs, [x[4] for x in clustering_values], "Steps", "Mutual Info", path+"mutual_info.png")
+        logger.generate_imgs(path)
+        logger.write_csv(path)
