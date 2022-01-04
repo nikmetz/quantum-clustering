@@ -2,10 +2,12 @@ from qclustering.datasets.generated import generate
 from qclustering.datasets.iris import iris
 from qclustering.datasets.mnist import mnist
 from qclustering.datasets.utils import DataSet
+from pennylane import numpy as np
 
 
 def load_data(
     dataset: str,
+    two_classes: bool=True,
     **dataset_params
 ) -> DataSet:
     """
@@ -22,10 +24,18 @@ def load_data(
     :raises ValueError: Raised if a not supported dataset is requested
     """
     if dataset == "iris":
-        return iris(**dataset_params)
+        data = iris(**dataset_params)
     elif dataset == "mnist":
-        return mnist(**dataset_params)
+        data = mnist(**dataset_params)
     elif dataset in ["circles", "moons", "classification", "blobs"]:
-        return generate(dataset=dataset, **dataset_params)
+        data = generate(dataset=dataset, **dataset_params)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
+
+    if two_classes:
+        train = np.array([1 if x == data.train_target[0] else -1 for x in data.train_target])
+        test = np.array([1 if x == data.train_target[0] else -1 for x in data.test_target])
+        val = np.array([1 if x == data.train_target[0] else -1 for x in data.validation_target])
+        data = DataSet(data.train_data, train, data.validation_data, val, data.test_data, test)
+
+    return data
