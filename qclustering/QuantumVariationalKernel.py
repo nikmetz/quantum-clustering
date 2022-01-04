@@ -13,7 +13,7 @@ class QuantumVariationalKernel():
         self.wires = wires
         self.params = init_params
         self.adjoint_ansatz = qml.adjoint(self.ansatz)
-        self.cost_func = cost_func
+        self.cost_func_name = cost_func
 
     def kernel_circuit(self, x1, x2, params):
         self.ansatz(x1, params, wires=self.wires)
@@ -55,21 +55,15 @@ class QuantumVariationalKernel():
 
             for idx, subset in enumerate(parts):
                 #TODO: should probably find a better solution for this mess
-                if self.cost_func == "KTA-supervised":
-                    cost = lambda _params: -qml.kernels.target_alignment(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), assume_normalized_kernel=False, rescale_class_labels=True)
-                    self.params, c = opt.step_and_cost(cost, self.params)
-                    cost_val = -qml.kernels.target_alignment(val_X, val_Y, self.kernel, assume_normalized_kernel=False, rescale_class_labels=True)
-                    print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
-                    logger.log_training(epoch*batches+idx, c, cost_val)
+                if self.cost_func_name == "KTA-supervised":
+                    cost_func = lambda _params: -qml.kernels.target_alignment(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), assume_normalized_kernel=False, rescale_class_labels=True)
+                    cost_val_func = lambda k: -qml.kernels.target_alignment(val_X, val_Y, k, assume_normalized_kernel=False, rescale_class_labels=True)
 
-                elif self.cost_func == "triplet-loss-supervised":
-                    cost = lambda _params: CostFunctions.triplet_loss(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), **kwargs.get("cost_func_params", "{}"))
-                    self.params, c = opt.step_and_cost(cost, self.params)
-                    cost_val = CostFunctions.triplet_loss(val_X, val_Y, self.kernel, **kwargs.get("cost_func_params", "{}"))
-                    print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
-                    logger.log_training(epoch*batches+idx, c, cost_val)
+                elif self.cost_func_name == "triplet-loss-supervised":
+                    cost_func = lambda _params: CostFunctions.triplet_loss(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), **kwargs.get("cost_func_params", "{}"))
+                    cost_val_func = lambda k: CostFunctions.triplet_loss(val_X, val_Y, k, **kwargs.get("cost_func_params", "{}"))
 
-                elif self.cost_func == "davies-bouldin":
+                elif self.cost_func_name == "davies-bouldin":
                     kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
                     cost = lambda _params: metrics.davies_bouldin_score(
                         train_X[subset],
@@ -77,14 +71,19 @@ class QuantumVariationalKernel():
                     )
                     self.params, c = opt.step_and_cost(cost, self.params)
                     
-                elif self.cost_func == "calinski-harabasz":
+                elif self.cost_func_name == "calinski-harabasz":
                     pass
-                elif self.cost_func == "KTA-unsupervised":
+                elif self.cost_func_name == "KTA-unsupervised":
                     pass
-                elif self.cost_func == "triplet-loss-unsupervised":
+                elif self.cost_func_name == "triplet-loss-unsupervised":
                     pass
                 else:
-                    pass
+                    raise ValueError(f"Unknown cost function: {self.cost_func_name}")
+
+                self.params, c = opt.step_and_cost(cost_func, self.params)
+                cost_val = cost_val_func(self.kernel)
+                print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
+                logger.log_training(epoch*batches+idx, c, cost_val)
 
             if (epoch + 1) % clustering_interval == 0:
                 km = KernelKMeans(n_clusters=num_classes, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
