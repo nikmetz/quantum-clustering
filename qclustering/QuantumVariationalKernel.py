@@ -24,7 +24,7 @@ class QuantumVariationalKernel():
         return self.kernel_with_params(x1, x2, self.params)
 
     def kernel_with_params(self, x1, x2, params):
-        return 1 - self.qnode(x1, x2, params)[0]
+        return self.qnode(x1, x2, params)[0]
 
     def train(self, data, **kwargs):
         batch_size = kwargs.get('batch_size', 5)
@@ -56,9 +56,9 @@ class QuantumVariationalKernel():
             for idx, subset in enumerate(parts):
                 #TODO: should probably find a better solution for this mess
                 if self.cost_func == "KTA-supervised":
-                    cost = lambda _params: -CostFunctions.multiclass_target_alignment(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), num_classes)
+                    cost = lambda _params: -qml.kernels.target_alignment(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), assume_normalized_kernel=False, rescale_class_labels=True)
                     self.params, c = opt.step_and_cost(cost, self.params)
-                    cost_val = CostFunctions.multiclass_target_alignment(val_X, val_Y, self.kernel, num_classes)
+                    cost_val = -qml.kernels.target_alignment(val_X, val_Y, self.kernel, assume_normalized_kernel=False, rescale_class_labels=True)
                     print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
                     logger.log_training(epoch*batches+idx, c, cost_val)
 
