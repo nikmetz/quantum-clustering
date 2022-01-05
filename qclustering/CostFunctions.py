@@ -66,5 +66,8 @@ def triplet_loss(X, labels, dist_func, **kwargs):
             dist_anchor_positive = current[positive_mask].min()
             dist_anchor_negative = current[negative_mask].max()
         
+        # dist_func is a kernel function, which is a similarity function, but triplet loss uses distances
+        dist_anchor_positive = 1 - dist_anchor_positive
+        dist_anchor_negative = 1 - dist_anchor_negative
         sum = sum + max(dist_anchor_positive - dist_anchor_negative + alpha, 0)
     return sum
