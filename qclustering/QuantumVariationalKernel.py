@@ -26,6 +26,12 @@ class QuantumVariationalKernel():
     def kernel_with_params(self, x1, x2, params):
         return self.qnode(x1, x2, params)[0]
 
+    def distance(self, x1, x2):
+        return 1 - self.kernel(x1, x2)
+
+    def distance_with_params(self, x1, x2, params):
+        return 1 - self.kernel_with_params(x1, x2, params)
+
     def train(self, data, **kwargs):
         batch_size = kwargs.get('batch_size', 5)
         epochs = kwargs.get('epochs', 500)
@@ -54,7 +60,6 @@ class QuantumVariationalKernel():
             parts = [perm[i::batches] for i in range(batches)]
 
             for idx, subset in enumerate(parts):
-                #TODO: should probably find a better solution for this mess
                 if self.cost_func_name == "KTA-supervised":
                     cost_func = lambda _params: -qml.kernels.target_alignment(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), assume_normalized_kernel=False, rescale_class_labels=True)
                     cost_val_func = lambda k: -qml.kernels.target_alignment(val_X, val_Y, k, assume_normalized_kernel=False, rescale_class_labels=True)
