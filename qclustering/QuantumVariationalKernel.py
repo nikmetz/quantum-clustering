@@ -1,8 +1,6 @@
 import pennylane as qml
-import qclustering.CostFunctions as CostFunctions
+from qclustering.CostFunctions import get_cost_func
 from pennylane import numpy as np
-from qclustering.KernelKMeans import KernelKMeans
-from sklearn import metrics
 from qclustering.Logging import Logging, get_cluster_result
 from qclustering.Clustering import clustering
 
@@ -40,8 +38,11 @@ class QuantumVariationalKernel():
         learning_rate_decay = kwargs.get('learning_rate_decay', 0.01)
         clustering_interval = kwargs.get("clustering_interval", 100)
         opt_name = kwargs.get("optimizer", "GradientDescent")
-        num_classes = max(len(kwargs.get("dataset_params", {}).get("classes", [])), 2)
+        n_clusters = max(len(kwargs.get("dataset_params", {}).get("classes", [])), 2)
         path = kwargs.get("path")
+        clustering_algorithm = kwargs.get("clustering_algorithm", "kmeans")
+        clustering_algorithm_params = kwargs.get("clustering_algorithm_params", {})
+        cost_func_params = kwargs.get("cost_func_params", {})
 
         train_X, train_Y = data.train_data, data.train_target
         val_X, val_Y = data.validation_data, data.validation_target
@@ -53,6 +54,7 @@ class QuantumVariationalKernel():
             lrate = learning_rate * (1 / (1+learning_rate_decay*epoch))
             if opt_name == "GradientDescent":
                 opt = qml.GradientDescentOptimizer(lrate)
+
             print("Epoch: {}, rate: {}".format(epoch, lrate))
 
             #TODO: is using a random partition here a good idea?
@@ -61,38 +63,15 @@ class QuantumVariationalKernel():
             parts = [perm[i::batches] for i in range(batches)]
 
             for idx, subset in enumerate(parts):
-                if self.cost_func_name == "KTA-supervised":
-                    cost_func = lambda _params: -qml.kernels.target_alignment(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), assume_normalized_kernel=False, rescale_class_labels=True)
-                    cost_val_func = lambda k: -qml.kernels.target_alignment(val_X, val_Y, k, assume_normalized_kernel=False, rescale_class_labels=True)
+                cost_func = get_cost_func(self.cost_func_name, cost_func_params, self)
 
-                elif self.cost_func_name == "triplet-loss-supervised":
-                    cost_func = lambda _params: CostFunctions.triplet_loss(train_X[subset], train_Y[subset], lambda x1, x2: self.kernel_with_params(x1, x2, _params), **kwargs.get("cost_func_params", "{}"))
-                    cost_val_func = lambda k: CostFunctions.triplet_loss(val_X, val_Y, k, **kwargs.get("cost_func_params", "{}"))
-
-                elif self.cost_func_name == "davies-bouldin":
-                    kmeans = KernelKMeans(n_clusters=2, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
-                    cost = lambda _params: metrics.davies_bouldin_score(
-                        train_X[subset],
-                        kmeans.fit(train_X[subset], kernel=lambda x1, x2: self.kernel_with_params(x1, x2, _params)).labels_
-                    )
-                    self.params, c = opt.step_and_cost(cost, self.params)
-                    
-                elif self.cost_func_name == "calinski-harabasz":
-                    pass
-                elif self.cost_func_name == "KTA-unsupervised":
-                    pass
-                elif self.cost_func_name == "triplet-loss-unsupervised":
-                    pass
-                else:
-                    raise ValueError(f"Unknown cost function: {self.cost_func_name}")
-
-                self.params, c = opt.step_and_cost(cost_func, self.params)
-                cost_val = cost_val_func(self.kernel)
+                self.params, c = opt.step_and_cost(lambda _params: cost_func(train_X[subset], train_Y[subset], _params), self.params)
+                cost_val = cost_func(val_X, val_Y, self.params)
                 print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
                 logger.log_training(epoch*batches+idx, c, cost_val)
 
             if (epoch + 1) % clustering_interval == 0:
-                lab = clustering("spectral", self, self.params, test_X, None)
+                lab = clustering(clustering_algorithm, self, self.params, test_X, n_clusters, clustering_algorithm_params)
                 print(lab)
                 print(test_Y)
 

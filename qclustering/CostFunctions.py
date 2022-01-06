@@ -1,6 +1,19 @@
 from pennylane import numpy as np
 import pennylane as qml
 
+def get_cost_func(cost_func_name, cost_func_params, kernel_obj):
+    if cost_func_name == "KTA-supervised":
+        return lambda X, Y, params: -qml.kernels.target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
+    elif cost_func_name == "KTA-unsupervised":
+        pass
+    elif cost_func_name == "triplet-loss-supervised":
+        return lambda X, Y, params: triplet_loss(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
+    elif cost_func_name == "triplet-loss-unsupervised":
+        pass
+    else:
+        raise ValueError(f"Unknown cost function: {cost_func_name}")
+    pass
+
 def multiclass_target_alignment(
     X,
     Y,
