@@ -4,6 +4,7 @@ from pennylane import numpy as np
 from qclustering.KernelKMeans import KernelKMeans
 from sklearn import metrics
 from qclustering.Logging import Logging, get_cluster_result
+from qclustering.Clustering import clustering
 
 class QuantumVariationalKernel():
     def __init__(self, wires, ansatz, init_params, cost_func, device, shots):
@@ -91,8 +92,7 @@ class QuantumVariationalKernel():
                 logger.log_training(epoch*batches+idx, c, cost_val)
 
             if (epoch + 1) % clustering_interval == 0:
-                km = KernelKMeans(n_clusters=num_classes, max_iter=100, random_state=0, verbose=1, kernel=self.kernel)
-                lab = km.fit(test_X, self.kernel).labels_
+                lab = clustering("spectral", self, self.params, test_X, None)
                 print(lab)
                 print(test_Y)
 

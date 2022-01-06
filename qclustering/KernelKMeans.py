@@ -55,10 +55,8 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
         #return pairwise_kernels(X, Y, metric=self.kernel,
         #                        filter_params=True, **params)
 
-    def fit(self, X, y=None, sample_weight=None, kernel=None):
+    def fit(self, X, y=None, sample_weight=None):
         n_samples = X.shape[0]
-        if kernel is not None:
-            self.kernel = kernel
 
         K = self._get_kernel(X)
 
