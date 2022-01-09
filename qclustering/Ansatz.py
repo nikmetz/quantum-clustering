@@ -16,10 +16,10 @@ def ansatz(x, params, wires):
         layer(x, layer_params, wires, i0=j * wires)
 
 def ansatz2(data, params, wires):
-    for layer in range(3):
+    for j, layer_params in enumerate(params):
         for wire in range(wires):
-            qml.RX(params[layer][wire][0], wires=wire)
-            qml.RY(params[layer][wire][1], wires=wire)
+            qml.RX(layer_params[wire][0], wires=wire)
+            qml.RY(layer_params[wire][1], wires=wire)
         for wire in range(0, wires - 1, 2):
             qml.CZ(wires=[wire, wire + 1])
         for wire in range(1, wires - 1, 2):
