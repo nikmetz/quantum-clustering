@@ -7,7 +7,7 @@ from pennylane import numpy as np
 
 def load_data(
     dataset: str,
-    two_classes: bool=True,
+    two_classes: bool=False,
     **dataset_params
 ) -> DataSet:
     """

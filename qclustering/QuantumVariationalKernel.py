@@ -63,7 +63,7 @@ class QuantumVariationalKernel():
             parts = [perm[i::batches] for i in range(batches)]
 
             for idx, subset in enumerate(parts):
-                cost_func = get_cost_func(self.cost_func_name, cost_func_params, self)
+                cost_func = get_cost_func(self.cost_func_name, cost_func_params, self, n_clusters)
 
                 self.params, c = opt.step_and_cost(lambda _params: cost_func(train_X[subset], train_Y[subset], _params), self.params)
                 cost_val = cost_func(val_X, val_Y, self.params)

@@ -1,8 +1,10 @@
 from pennylane import numpy as np
 import pennylane as qml
 
-def get_cost_func(cost_func_name, cost_func_params, kernel_obj):
+def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
     if cost_func_name == "KTA-supervised":
+        return lambda X, Y, params: -multiclass_target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, **cost_func_params)
+    elif cost_func_name == "original-KTA-supervised":
         return lambda X, Y, params: -qml.kernels.target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
     elif cost_func_name == "KTA-unsupervised":
         pass
@@ -14,38 +16,28 @@ def get_cost_func(cost_func_name, cost_func_params, kernel_obj):
         raise ValueError(f"Unknown cost function: {cost_func_name}")
     pass
 
-def multiclass_target_alignment(
-    X,
-    Y,
-    kernel,
-    num_classes,
-    assume_normalized_kernel=False,
-    rescale_class_labels=True,
-):
+def centered_kernel_mat(kernel_mat):
+    n_samples = kernel_mat.shape[0]
+    M = np.identity(n_samples) - np.full((n_samples, n_samples), 1/n_samples)
+    return np.dot(np.dot(M, kernel_mat), M)
 
+def multiclass_target_alignment(X, Y, kernel, num_classes, assume_normalized_kernel=False):
     K = qml.kernels.square_kernel_matrix(
         X,
         kernel,
         assume_normalized_kernel=assume_normalized_kernel,
     )
-
     num_samples = Y.shape[0]
-    if rescale_class_labels:
-        unique, counts = np.unique(Y, return_counts=True)
-        test = [counts[np.argwhere(unique==x)[0][0]] for x in Y]
-        scale = np.outer(test, test)
-    else:
-        scale = np.ones((num_samples, num_samples))
 
     T = None
     for i in range(num_samples):
-        n = [[1/scale[i][j] if Y[i]==Y[j] else (-1/(num_classes-1))/scale[i][j] for j in range(num_samples)]]
+        n = [[1 if Y[i]==Y[j] else (-1/(num_classes-1)) for j in range(num_samples)]]
         if T is None:
             T = np.copy(n)
         else:
             T = np.concatenate((T, n), axis=0)
 
-    return qml.math.frobenius_inner_product(K, T, normalize=True)
+    return qml.math.frobenius_inner_product(centered_kernel_mat(K), centered_kernel_mat(T), normalize=True)
 
 def triplet_loss(X, labels, dist_func, **kwargs):
     strategy = kwargs.get("strategy", "random")
