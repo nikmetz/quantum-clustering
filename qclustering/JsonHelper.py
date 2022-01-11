@@ -1,4 +1,3 @@
-import qclustering.Ansatz as Ansatz
 import json
 import os
 import shutil
@@ -8,6 +7,7 @@ import datetime
 from qclustering.QuantumVariationalKernel import QuantumVariationalKernel
 from qclustering.utils import get_params
 from pennylane import numpy as np
+from qclustering.Ansatz import get_ansatz
 
 def run_json_file(file):
     with open(file) as f:
@@ -33,10 +33,7 @@ def run_json_config(js, path=""):
 
     init_params = get_params(strategy=js.get("init_params"), num_wires=wires, num_layers=layers, params_per_wire=params_per_wire)
 
-    if js.get("ansatz") == "ansatz":
-        ansatz = Ansatz.ansatz
-    elif js.get("ansatz") == "ansatz2":
-        ansatz = Ansatz.ansatz2
+    ansatz = get_ansatz(js.get("ansatz", "ansatz1"))
 
     qvk = QuantumVariationalKernel(wires, ansatz, init_params, cost_func, device, shots)
 
