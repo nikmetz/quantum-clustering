@@ -73,9 +73,9 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
             dist = np.zeros((n_samples, self.n_clusters))
             dist = self._compute_dist(K, dist, self.within_distances_,
                                update_within=True)
-            if dist is None:
-                self.labels_ = np.random.randint(self.n_clusters, size=n_samples)
-                break
+            #if dist is None:
+            #    self.labels_ = np.random.randint(self.n_clusters, size=n_samples)
+            #    break
             labels_old = self.labels_
             self.labels_ = dist.argmin(axis=1)
             self.all_labels.append(self.labels_)
@@ -104,7 +104,7 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
             if np.sum(mask) == 0:
                 print("Empty cluster found, try smaller n_cluster.")
                 #raise ValueError("Empty cluster found, try smaller n_cluster.")
-                return None
+                #return None
 
             denom = sw[mask].sum()
             denomsq = denom * denom

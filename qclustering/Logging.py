@@ -2,6 +2,7 @@ from typing import NamedTuple, Dict
 from dataclasses import dataclass, field
 from sklearn import metrics
 from qclustering.utils import simple_plot
+from pennylane import numpy as np
 import csv
 
 class ClusterResult(NamedTuple):
@@ -24,8 +25,12 @@ def get_cluster_result(X, labels_true, labels_pred) -> ClusterResult:
     adjusted_mutual_info = metrics.adjusted_mutual_info_score(labels_true, labels_pred)
     normalized_mutual_info = metrics.normalized_mutual_info_score(labels_true, labels_pred)
     fowlkes_mallows_score = metrics.fowlkes_mallows_score(labels_true, labels_pred)
-    calinski_harabasz = metrics.calinski_harabasz_score(X, labels_pred)
-    davies_bouldin = metrics.davies_bouldin_score(X, labels_pred)
+    if len(np.unique(labels_pred)) < 2:
+        calinski_harabasz = 0
+        davies_bouldin = 0
+    else:
+        calinski_harabasz = metrics.calinski_harabasz_score(X, labels_pred)
+        davies_bouldin = metrics.davies_bouldin_score(X, labels_pred)
 
     return ClusterResult(rand_score, adjusted_rand_score, mutual_info, adjusted_mutual_info, normalized_mutual_info, fowlkes_mallows_score, calinski_harabasz, davies_bouldin)
 
