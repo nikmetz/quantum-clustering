@@ -1,7 +1,7 @@
 import pennylane as qml
 
 def get_ansatz(name):
-    if name == "ansatz1":
+    if name == "ansatz":
         return ansatz
     elif name == "ansatz2":
         return ansatz2
