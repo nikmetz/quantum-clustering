@@ -103,12 +103,12 @@ def mnist(
 
     pca = apply_PCA(features, x_train)
     x_train = pca.transform(x_train)
-    #x_train = minmax_scale(x_train, (0, 2 * np.pi))
+    x_train = minmax_scale(x_train, (0, 2 * np.pi))
     if len(x_validation) > 0:
         x_validation = pca.transform(x_validation)
-        #x_validation = minmax_scale(x_validation, (0, 2 * np.pi))
+        x_validation = minmax_scale(x_validation, (0, 2 * np.pi))
     x_test = pca.transform(x_test)
-    #x_test = minmax_scale(x_test, (0, 2 * np.pi))
+    x_test = minmax_scale(x_test, (0, 2 * np.pi))
 
     return DataSet(x_train, y_train, x_validation, y_validation, x_test, y_test)
 
