@@ -15,8 +15,8 @@ class QuantumVariationalKernel():
         self.cost_func_name = cost_func
 
     def kernel_circuit(self, x1, x2, params):
-        self.ansatz(x1, params, wires=self.wires)
-        self.adjoint_ansatz(x2, params, wires=self.wires)
+        self.ansatz(x1, params)
+        self.adjoint_ansatz(x2, params)
         return qml.probs(wires=self.device.wires.tolist())
 
     def kernel(self, x1, x2):

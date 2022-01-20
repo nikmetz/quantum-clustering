@@ -21,9 +21,11 @@ def run_json_file(file):
     run_json_config(js, folder_name)
 
 def run_json_config(js, path=""):
-    wires = js.get("wires")
-    layers = js.get("layers")
-    params_per_wire = js.get("params_per_wire")
+    ansatz_name = js.get("ansatz", "ansatz")
+    ansatz_params = js.get("ansatz_params", {})
+    wires = ansatz_params.pop("wires", 4)
+    layers = ansatz_params.pop("layers", 3)
+    params_per_wire = ansatz_params.pop("params_per_wire", 2)
     cost_func = js.get("cost_func")
     device = js.get("device", "default.qubit")
     shots = js.get("shots", None)
@@ -33,7 +35,7 @@ def run_json_config(js, path=""):
 
     init_params = get_params(strategy=js.get("init_params"), num_wires=wires, num_layers=layers, params_per_wire=params_per_wire)
 
-    ansatz = get_ansatz(js.get("ansatz", "ansatz1"))
+    ansatz = get_ansatz(ansatz_name, wires, layers, ansatz_params)
 
     qvk = QuantumVariationalKernel(wires, ansatz, init_params, cost_func, device, shots)
 
