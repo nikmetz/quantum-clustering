@@ -21,7 +21,7 @@ def run_json_file(file):
     run_json_config(js, folder_name)
 
 def run_json_config(js, path=""):
-    ansatz_name = js.get("ansatz", "ansatz")
+    ansatz_name = js.get("ansatz", "ansatz1")
     ansatz_params = js.get("ansatz_params", {})
     wires = ansatz_params.pop("wires", 4)
     layers = ansatz_params.pop("layers", 3)

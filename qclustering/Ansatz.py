@@ -2,7 +2,7 @@ import pennylane as qml
 from math import gcd
 
 def get_ansatz(name, num_wires, num_layers, params):
-    if name == "ansatz":
+    if name == "ansatz1":
         return lambda x, p: ansatz(x, p, num_wires)
     elif name == "ansatz2":
         return lambda x, p: ansatz2(x, p, num_wires)
@@ -16,7 +16,7 @@ def layer(x, params, wires, i0=0, inc=1):
     i = i0
     for wire in range(wires):
         qml.Hadamard(wires=wire)
-        qml.RX(x[i % len(x)], wires=wire)
+        qml.RZ(x[i % len(x)], wires=wire)
         i += inc
         qml.RY(params[wire, 0], wires=wire)
 

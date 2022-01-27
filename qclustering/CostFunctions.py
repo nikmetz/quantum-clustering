@@ -6,6 +6,8 @@ def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
         return lambda X, Y, params: -multiclass_target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, **cost_func_params)
     elif cost_func_name == "original-KTA-supervised":
         return lambda X, Y, params: -qml.kernels.target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
+    elif cost_func_name == "kernel-penalty":
+        return lambda X, Y, params: kernel_penalty(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
     elif cost_func_name == "KTA-unsupervised":
         pass
     elif cost_func_name == "triplet-loss-supervised":
@@ -38,6 +40,19 @@ def multiclass_target_alignment(X, Y, kernel, num_classes, assume_normalized_ker
             T = np.concatenate((T, n), axis=0)
 
     return qml.math.frobenius_inner_product(centered_kernel_mat(K), centered_kernel_mat(T), normalize=True)
+
+def kernel_penalty(X, Y, kernel, inner_penalty=1, inter_penalty=1):
+    K = qml.kernels.square_kernel_matrix(X, kernel, assume_normalized_kernel=False)
+    inner_sum = 0.0
+    inter_sum = 0.0
+
+    for x in range(len(X)):
+        for y in range(x, len(X), 1):
+            if Y[x] == Y[y]:
+                inner_sum += 1 - K[x][y]
+            else:
+                inter_sum += K[x][y]
+    return inner_penalty * inner_sum + inter_penalty * inter_sum
 
 def triplet_loss(X, labels, dist_func, **kwargs):
     strategy = kwargs.get("strategy", "random")
