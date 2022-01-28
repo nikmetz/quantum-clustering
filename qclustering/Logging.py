@@ -3,9 +3,12 @@ from dataclasses import dataclass, field
 from sklearn import metrics
 from qclustering.utils import simple_plot
 from pennylane import numpy as np
+from itertools import permutations
+import copy
 import csv
 
 class ClusterResult(NamedTuple):
+    accuracy: float
     rand_score: float
     adjusted_rand_score: float
     mutual_info: float
@@ -15,10 +18,31 @@ class ClusterResult(NamedTuple):
     calinski_harabasz: float
     davies_bouldin: float
 
+def accuracy(true_labels, pred_labels):
+    return 1 - np.count_nonzero(pred_labels - true_labels) / len(true_labels)
+
+def list_accuracy(true_labels, pred_labels):
+    acc = 0.0
+    unique_labels = np.unique(true_labels)
+    permut = set(permutations(unique_labels))
+    unique_pred_labels = np.unique(pred_labels)
+
+    for x in permut:
+        a = copy.deepcopy(pred_labels)
+        masks = []
+        for l in unique_pred_labels:
+            masks.append(a == l)
+        for idx, y in enumerate(masks):
+            a[y] = x[idx]
+
+        acc = max(acc, accuracy(true_labels, a))
+    return acc
+
 def result_to_list(result: ClusterResult):
-    return [result.rand_score, result.adjusted_rand_score, result.mutual_info, result.adjusted_mutual_info, result.normalized_mutual_info, result.fowlkes_mallows_score, result.calinski_harabasz, result.davies_bouldin]
+    return [result.accuracy, result.rand_score, result.adjusted_rand_score, result.mutual_info, result.adjusted_mutual_info, result.normalized_mutual_info, result.fowlkes_mallows_score, result.calinski_harabasz, result.davies_bouldin]
 
 def get_cluster_result(X, labels_true, labels_pred) -> ClusterResult:
+    accuracy = list_accuracy(labels_true, labels_pred)
     rand_score = metrics.rand_score(labels_true, labels_pred)
     adjusted_rand_score = metrics.adjusted_rand_score(labels_true, labels_pred)
     mutual_info = metrics.mutual_info_score(labels_true, labels_pred)
@@ -32,7 +56,7 @@ def get_cluster_result(X, labels_true, labels_pred) -> ClusterResult:
         calinski_harabasz = metrics.calinski_harabasz_score(X, labels_pred)
         davies_bouldin = metrics.davies_bouldin_score(X, labels_pred)
 
-    return ClusterResult(rand_score, adjusted_rand_score, mutual_info, adjusted_mutual_info, normalized_mutual_info, fowlkes_mallows_score, calinski_harabasz, davies_bouldin)
+    return ClusterResult(accuracy, rand_score, adjusted_rand_score, mutual_info, adjusted_mutual_info, normalized_mutual_info, fowlkes_mallows_score, calinski_harabasz, davies_bouldin)
 
 @dataclass
 class Logging:
@@ -62,7 +86,7 @@ class Logging:
 
         with open(path+"clustering.csv", mode="w") as clustering_f:
             clustering_writer = csv.writer(clustering_f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            clustering_writer.writerow(["step", "rand_score", "adjusted_rand_score", "mutual_info", "adjusted_mutual_info", "normalized_mutual_info", "fowlkes_mallows_score", "calinksi_harabasz", "davies_bouldin"])
+            clustering_writer.writerow(["step", "accuracy", "rand_score", "adjusted_rand_score", "mutual_info", "adjusted_mutual_info", "normalized_mutual_info", "fowlkes_mallows_score", "calinksi_harabasz", "davies_bouldin"])
             for key, value in self.clustering.items():
                 clustering_writer.writerow([key]+result_to_list(value))
 
@@ -73,6 +97,7 @@ class Logging:
         simple_plot(val_steps, [self.val_cost[x] for x in val_steps], "Steps", "Validation loss", path+"val_loss.png")
 
         clustering_steps = list(self.clustering.keys())
+        simple_plot(clustering_steps, [self.clustering[x].accuracy for x in clustering_steps], "Steps", "Accuracy", path+"accuracy.png")
         simple_plot(clustering_steps, [self.clustering[x].rand_score for x in clustering_steps], "Steps", "Rand score", path+"rand_score.png")
         simple_plot(clustering_steps, [self.clustering[x].adjusted_rand_score for x in clustering_steps], "Steps", "Adjusted rand score", path+"adjusted_rand_score.png")
         simple_plot(clustering_steps, [self.clustering[x].mutual_info for x in clustering_steps], "Steps", "Mutual info", path+"mutual_info.png")
