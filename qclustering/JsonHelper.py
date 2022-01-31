@@ -26,7 +26,6 @@ def run_json_config(js, path=""):
     wires = ansatz_params.pop("wires", 4)
     layers = ansatz_params.pop("layers", 3)
     params_per_wire = ansatz_params.pop("params_per_wire", 2)
-    cost_func = js.get("cost_func")
     device = js.get("device", "default.qubit")
     shots = js.get("shots", None)
     numpy_seed = js.get("numpy_seed", 1546)
@@ -37,10 +36,24 @@ def run_json_config(js, path=""):
 
     ansatz = get_ansatz(ansatz_name, wires, layers, ansatz_params)
 
-    qvk = QuantumVariationalKernel(wires, ansatz, init_params, cost_func, device, shots)
+    qvk = QuantumVariationalKernel(wires, ansatz, init_params, device, shots)
 
     data = qclustering.datasets.load_data(js.get("dataset"), **js.get("dataset_params", {}))
 
-    qvk.train(data, path=path, **js)
+    qvk.train(
+        data = data,
+        batch_size = js.get("batch_size", 5),
+        epochs = js.get("epochs", 500),
+        learning_rate = js.get("learning_rate", 0.2),
+        learning_rate_decay = js.get("learning_rate_decay", 0.0),
+        clustering_interval = js.get("clustering_interval", 100),
+        optimizer_name = js.get("optimizer", "GradientDescent"),
+        optimizer_params = js.get("optimizer_params", {}),
+        clustering_algorithm = js.get("clustering_algorithm", "kmeans"),
+        clustering_algorithm_params = js.get("clustering_algorithm_params", {}),
+        cost_func_name = js.get("cost_func", "KTA-supervised"),
+        cost_func_params = js.get("cost_func_params", {}),
+        logging_path = path
+    )
 
     return qvk
