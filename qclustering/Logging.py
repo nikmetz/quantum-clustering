@@ -4,6 +4,7 @@ from sklearn import metrics
 from qclustering.utils import simple_plot
 from pennylane import numpy as np
 from itertools import permutations
+import matplotlib.pyplot as plt
 import copy
 import csv
 
@@ -106,3 +107,13 @@ class Logging:
         simple_plot(clustering_steps, [self.clustering[x].fowlkes_mallows_score for x in clustering_steps], "Steps", "Fowlkes mallows score", path+"fowlkes_mallows_score.png")
         simple_plot(clustering_steps, [self.clustering[x].calinski_harabasz for x in clustering_steps], "Steps", "Calinski harabasz", path+"calinski_harabasz.png")
         simple_plot(clustering_steps, [self.clustering[x].davies_bouldin for x in clustering_steps], "Steps", "Davies bouldin", path+"davies_bouldin.png")
+
+    def visualize_cluster(self, X, labels, path):
+        xs, ys = np.split(X, 2, axis=1)
+        xs = np.reshape(xs, (xs.shape[0]))
+        ys = np.reshape(ys, (ys.shape[0]))
+
+        fig, ax = plt.subplots()
+        a = ax.scatter(xs, ys, c=labels)
+        plt.savefig(path)
+        return

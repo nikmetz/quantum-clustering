@@ -77,6 +77,8 @@ class QuantumVariationalKernel():
 
                 result = get_cluster_result(test_X, test_Y, lab)
                 logger.log_clustering(epoch*batches, result)
+                if test_X.shape[1] == 2:
+                    logger.visualize_cluster(test_X, lab, path+str(epoch*batches)+".png")
 
         logger.generate_imgs(path)
         logger.write_csv(path)
