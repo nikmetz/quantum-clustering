@@ -12,10 +12,6 @@ class ClusterResult(NamedTuple):
     accuracy: float
     rand_score: float
     adjusted_rand_score: float
-    mutual_info: float
-    adjusted_mutual_info: float
-    normalized_mutual_info: float
-    fowlkes_mallows_score: float
     calinski_harabasz: float
     davies_bouldin: float
 
@@ -40,16 +36,12 @@ def list_accuracy(true_labels, pred_labels):
     return acc
 
 def result_to_list(result: ClusterResult):
-    return [result.accuracy, result.rand_score, result.adjusted_rand_score, result.mutual_info, result.adjusted_mutual_info, result.normalized_mutual_info, result.fowlkes_mallows_score, result.calinski_harabasz, result.davies_bouldin]
+    return [result.accuracy, result.rand_score, result.adjusted_rand_score, result.calinski_harabasz, result.davies_bouldin]
 
 def get_cluster_result(X, labels_true, labels_pred) -> ClusterResult:
     accuracy = list_accuracy(labels_true, labels_pred)
     rand_score = metrics.rand_score(labels_true, labels_pred)
     adjusted_rand_score = metrics.adjusted_rand_score(labels_true, labels_pred)
-    mutual_info = metrics.mutual_info_score(labels_true, labels_pred)
-    adjusted_mutual_info = metrics.adjusted_mutual_info_score(labels_true, labels_pred)
-    normalized_mutual_info = metrics.normalized_mutual_info_score(labels_true, labels_pred)
-    fowlkes_mallows_score = metrics.fowlkes_mallows_score(labels_true, labels_pred)
     if len(np.unique(labels_pred)) < 2:
         calinski_harabasz = 0
         davies_bouldin = 0
@@ -57,7 +49,7 @@ def get_cluster_result(X, labels_true, labels_pred) -> ClusterResult:
         calinski_harabasz = metrics.calinski_harabasz_score(X, labels_pred)
         davies_bouldin = metrics.davies_bouldin_score(X, labels_pred)
 
-    return ClusterResult(accuracy, rand_score, adjusted_rand_score, mutual_info, adjusted_mutual_info, normalized_mutual_info, fowlkes_mallows_score, calinski_harabasz, davies_bouldin)
+    return ClusterResult(accuracy, rand_score, adjusted_rand_score, calinski_harabasz, davies_bouldin)
 
 @dataclass
 class Logging:
@@ -87,7 +79,7 @@ class Logging:
 
         with open(path+"clustering.csv", mode="w") as clustering_f:
             clustering_writer = csv.writer(clustering_f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            clustering_writer.writerow(["step", "accuracy", "rand_score", "adjusted_rand_score", "mutual_info", "adjusted_mutual_info", "normalized_mutual_info", "fowlkes_mallows_score", "calinksi_harabasz", "davies_bouldin"])
+            clustering_writer.writerow(["step", "accuracy", "rand_score", "adjusted_rand_score", "calinksi_harabasz", "davies_bouldin"])
             for key, value in self.clustering.items():
                 clustering_writer.writerow([key]+result_to_list(value))
 
@@ -101,10 +93,6 @@ class Logging:
         simple_plot(clustering_steps, [self.clustering[x].accuracy for x in clustering_steps], "Steps", "Accuracy", path+"accuracy.png")
         simple_plot(clustering_steps, [self.clustering[x].rand_score for x in clustering_steps], "Steps", "Rand score", path+"rand_score.png")
         simple_plot(clustering_steps, [self.clustering[x].adjusted_rand_score for x in clustering_steps], "Steps", "Adjusted rand score", path+"adjusted_rand_score.png")
-        simple_plot(clustering_steps, [self.clustering[x].mutual_info for x in clustering_steps], "Steps", "Mutual info", path+"mutual_info.png")
-        simple_plot(clustering_steps, [self.clustering[x].adjusted_mutual_info for x in clustering_steps], "Steps", "Adjusted mutual info", path+"adjusted_mutual_info.png")
-        simple_plot(clustering_steps, [self.clustering[x].normalized_mutual_info for x in clustering_steps], "Steps", "Normalized mutual info", path+"normalized_mutual_info.png")
-        simple_plot(clustering_steps, [self.clustering[x].fowlkes_mallows_score for x in clustering_steps], "Steps", "Fowlkes mallows score", path+"fowlkes_mallows_score.png")
         simple_plot(clustering_steps, [self.clustering[x].calinski_harabasz for x in clustering_steps], "Steps", "Calinski harabasz", path+"calinski_harabasz.png")
         simple_plot(clustering_steps, [self.clustering[x].davies_bouldin for x in clustering_steps], "Steps", "Davies bouldin", path+"davies_bouldin.png")
 
