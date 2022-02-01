@@ -1,5 +1,7 @@
 from qclustering.KernelKMeans import KernelKMeans
 from sklearn.cluster import SpectralClustering, AgglomerativeClustering, DBSCAN, OPTICS
+from sklearn.svm import SVC
+import pennylane as qml
 
 def clustering(algorithm, algorithm_params, kernel_obj, n_clusters, X, train_X=None, train_Y=None):
     if algorithm  == "kmeans":
@@ -18,6 +20,7 @@ def clustering(algorithm, algorithm_params, kernel_obj, n_clusters, X, train_X=N
         optics = OPTICS(metric=kernel_obj.distance, **algorithm_params)
         return optics.fit(X).labels_
     elif algorithm == "svm":
-        pass
+        svm = SVC(kernel=lambda X1, X2: qml.kernels.kernel_matrix(X1, X2, kernel_obj.kernel), **algorithm_params).fit(train_X, train_Y)
+        return svm.predict(X)
     else:
         raise ValueError(f"Unknown clustering algorithm: {algorithm}")
