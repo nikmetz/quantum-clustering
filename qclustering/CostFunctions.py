@@ -83,8 +83,8 @@ def triplet_loss(X, labels, dist_func, **kwargs):
             dist_anchor_negative = dist_func(anchor, X[negative_mask][neg_idx])
         elif strategy == "minmax":
             current = K[anchor_idx]
-            dist_anchor_positive = current[positive_mask].min()
-            dist_anchor_negative = current[negative_mask].max()
+            dist_anchor_positive = current[positive_mask].max()
+            dist_anchor_negative = current[negative_mask].min()
         
         # dist_func is a kernel function, which is a similarity function, but triplet loss uses distances
         dist_anchor_positive = 1 - dist_anchor_positive
