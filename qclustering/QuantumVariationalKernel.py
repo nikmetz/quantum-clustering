@@ -51,7 +51,17 @@ class QuantumVariationalKernel():
         for epoch in range(epochs):
             lrate = learning_rate * (1 / (1+learning_rate_decay*epoch))
             if optimizer_name == "GradientDescent":
-                opt = qml.GradientDescentOptimizer(lrate, **optimizer_params)
+                opt = qml.GradientDescentOptimizer(stepsize=lrate, **optimizer_params)
+            elif optimizer_name == "Adam":
+                opt = qml.AdamOptimizer(stepsize=lrate, **optimizer_params)
+            elif optimizer_name == "Adagrad":
+                opt = qml.AdagradOptimizer(stepsize=lrate, **optimizer_params)
+            elif optimizer_name == "Momentum":
+                opt = qml.MomentumOptimizer(stepsize=lrate, **optimizer_params)
+            elif optimizer_name == "RMSProp":
+                opt = qml.RMSPropOptimizer(stepsize=lrate, **optimizer_params)
+            else:
+                raise ValueError(f"Unknown optimizer: {optimizer_name}")
 
             print("Epoch: {}, rate: {}".format(epoch, lrate))
 
