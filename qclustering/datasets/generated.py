@@ -53,3 +53,31 @@ def symmetric_donuts(train_size=20, test_size=20, val_size=20):
     x_val, y_val = donut(val_size)
 
     return DataSet(x_train, y_train, x_val, y_val, x_test, y_test)
+
+def single_donut(num_train):
+    x_data, y_data = [], []
+
+    inv_sqrt2 = 1/np.sqrt(2)
+    x_donut = 1
+    i = 0
+    while (i<num_train):
+        x = np.random.uniform(-inv_sqrt2,inv_sqrt2, 2)
+        r_squared = np.linalg.norm(x, 2)**2
+        if r_squared < 0.5:
+            if r_squared < 0.05:
+                i += 1
+                x_data.append(x)
+                y_data.append(x_donut)
+            elif r_squared > 0.45:
+                i += 1
+                x_data.append(x)
+                y_data.append(-x_donut)
+
+    return np.array(x_data), np.array(y_data)
+
+def test_donuts(train_size=20, test_size=20, val_size=20):
+    x_train, y_train = single_donut(train_size)
+    x_test, y_test = single_donut(test_size)
+    x_val, y_val = single_donut(val_size)
+
+    return DataSet(x_train, y_train, x_val, y_val, x_test, y_test)

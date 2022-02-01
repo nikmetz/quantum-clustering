@@ -1,4 +1,3 @@
-from typing import ValuesView
 import autograd.numpy as np
 import matplotlib.pyplot as plt
 

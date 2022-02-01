@@ -1,5 +1,5 @@
 from qclustering.datasets.generated import generate
-from qclustering.datasets.generated import symmetric_donuts
+from qclustering.datasets.generated import symmetric_donuts, test_donuts
 from qclustering.datasets.iris import iris
 from qclustering.datasets.mnist import mnist
 from qclustering.datasets.utils import DataSet
@@ -33,6 +33,8 @@ def load_data(
         data = generate(dataset=dataset, **dataset_params)
     elif dataset == "donuts":
         data = symmetric_donuts(**dataset_params)
+    elif dataset == "test_donuts":
+        data = test_donuts(**dataset_params)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
 
