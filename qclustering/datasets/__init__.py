@@ -8,8 +8,8 @@ from pennylane import numpy as np
 
 def load_data(
     dataset: str,
-    two_classes: bool=False,
-    **dataset_params
+    two_classes = False,
+    dataset_params = {}
 ) -> DataSet:
     """
     Returns the data for the requested ``dataset``.
@@ -24,6 +24,7 @@ def load_data(
     :param features: number of features in the data
     :raises ValueError: Raised if a not supported dataset is requested
     """
+
     if dataset == "iris":
         data = iris(**dataset_params)
     elif dataset == "mnist":
