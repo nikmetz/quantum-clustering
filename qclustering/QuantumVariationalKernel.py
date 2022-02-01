@@ -1,8 +1,6 @@
 import pennylane as qml
 from qclustering.CostFunctions import get_cost_func
 from pennylane import numpy as np
-from qclustering.Logging import Logging, get_cluster_result
-from qclustering.Clustering import clustering
 
 class QuantumVariationalKernel():
     def __init__(self, wires, ansatz, init_params, device, shots):
@@ -37,23 +35,18 @@ class QuantumVariationalKernel():
         epochs = 500,
         learning_rate = 0.2,
         learning_rate_decay = 0.0,
-        clustering_interval = 100,
         optimizer_name = "GradientDescent",
         optimizer_params = {},
-        clustering_algorithm = "kmeans",
-        clustering_algorithm_params = {},
         cost_func_name = "KTA-supervised",
         cost_func_params = {},
-        logging_path = ""
-        ):
+        logging_obj = None
+    ):
 
         train_X, train_Y = data.train_data, data.train_target
         val_X, val_Y = data.validation_data, data.validation_target
         test_X, test_Y = data.test_data, data.test_target
 
-        n_clusters = np.unique(train_X).shape[0]
-
-        logger = Logging()
+        n_clusters = np.unique(train_Y).shape[0]
 
         for epoch in range(epochs):
             lrate = learning_rate * (1 / (1+learning_rate_decay*epoch))
@@ -73,17 +66,12 @@ class QuantumVariationalKernel():
                 self.params, c = opt.step_and_cost(lambda _params: cost_func(train_X[subset], train_Y[subset], _params), self.params)
                 cost_val = cost_func(val_X, val_Y, self.params)
                 print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
-                logger.log_training(epoch*batches+idx, c, cost_val)
+                if logging_obj is not None:
+                    logging_obj.log_training(epoch*batches+idx, c)
+                    logging_obj.log_validation(epoch*batches+idx, cost_val)
 
-            if (epoch + 1) % clustering_interval == 0:
-                lab = clustering(clustering_algorithm, self, self.params, test_X, n_clusters, clustering_algorithm_params)
-                print(lab)
-                print(test_Y)
+            if logging_obj is not None:
+                logging_obj.log_testing(epoch+1, self, n_clusters, test_X, test_Y, train_X, train_Y)
 
-                result = get_cluster_result(test_X, test_Y, lab)
-                logger.log_clustering(epoch*batches, result)
-                if test_X.shape[1] == 2:
-                    logger.visualize_cluster(test_X, lab, logging_path+str(epoch*batches)+".png")
-
-        logger.generate_imgs(logging_path)
-        logger.write_csv(logging_path)
+        if logging_obj is not None:
+            logging_obj.finish()

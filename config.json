@@ -1,31 +1,39 @@
 {
-    "numpy_seed": 1546,
-    "wires": 4,
-    "layers": 3,
-    "params_per_wire": 2,
+    "numpy_seed": 87564,
     "shots": null,
-    "cost_func": "KTA-supervised",
+    "cost_func": "kernel-penalty",
     "cost_func_params":{
-        "alpha": 1,
-        "strategy": "minmax"
+
     },
     "device": "default.qubit",
     "init_params": "random",
-    "ansatz": "ansatz2",
-    "dataset": "iris",
+    "ansatz": "ansatz1",
+    "ansatz_params": {
+        "wires": 4,
+        "layers": 5,
+        "params_per_wire": 2
+    },
+    "dataset": "donuts",
     "dataset_params":{
-        "num_classes": 2,
-        "train_size": 20,
-        "test_size": 20,
-        "val_size": 5
+        "train_size": 10,
+        "test_size": 10,
+        "val_size": 10
     },
     "batch_size": 5,
-    "epochs": 100,
+    "epochs": 1,
     "learning_rate": 0.01,
     "learning_rate_decay": 0,
-    "clustering_interval": 25,
+    "clustering_interval": 1,
     "optimizer": "GradientDescent",
     "optimizer_params": {
 
-    }
+    },
+    "clustering_algorithm": [
+        "spectral",
+        "kmeans"
+    ],
+    "clustering_algorithm_params": [
+        {},
+        {}
+    ]
 }

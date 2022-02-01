@@ -8,6 +8,7 @@ from qclustering.QuantumVariationalKernel import QuantumVariationalKernel
 from qclustering.utils import get_params
 from pennylane import numpy as np
 from qclustering.Ansatz import get_ansatz
+from qclustering.Logging import Logging
 
 def run_json_file(file):
     with open(file) as f:
@@ -40,20 +41,24 @@ def run_json_config(js, path=""):
 
     data = qclustering.datasets.load_data(js.get("dataset"), **js.get("dataset_params", {}))
 
+    logging_obj = Logging(
+        testing_interval = js.get("clustering_interval", 100),
+        testing_algorithms = js.get("clustering_algorithm", ["kmeans"]),
+        testing_algorithm_params = js.get("clustering_algorithm_params", [{}]),
+        path = path
+    )
+
     qvk.train(
         data = data,
         batch_size = js.get("batch_size", 5),
         epochs = js.get("epochs", 500),
         learning_rate = js.get("learning_rate", 0.2),
         learning_rate_decay = js.get("learning_rate_decay", 0.0),
-        clustering_interval = js.get("clustering_interval", 100),
         optimizer_name = js.get("optimizer", "GradientDescent"),
         optimizer_params = js.get("optimizer_params", {}),
-        clustering_algorithm = js.get("clustering_algorithm", "kmeans"),
-        clustering_algorithm_params = js.get("clustering_algorithm_params", {}),
         cost_func_name = js.get("cost_func", "KTA-supervised"),
         cost_func_params = js.get("cost_func_params", {}),
-        logging_path = path
+        logging_obj=logging_obj
     )
 
     return qvk
