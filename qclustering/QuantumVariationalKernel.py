@@ -81,7 +81,7 @@ class QuantumVariationalKernel():
                     logging_obj.log_validation(epoch*batches+idx, cost_val)
 
             if logging_obj is not None:
-                logging_obj.log_testing(epoch+1, self, n_clusters, test_X, test_Y, train_X, train_Y)
+                logging_obj.log_testing(epoch+1, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)
 
         if logging_obj is not None:
             logging_obj.finish()

@@ -4,10 +4,11 @@ from qclustering.utils import simple_plot
 from pennylane import numpy as np
 from itertools import permutations
 from pathlib import Path
-from qclustering.Clustering import clustering
+from qclustering.Clustering import clustering, classification
 import matplotlib.pyplot as plt
 import copy
 import csv
+import pennylane as qml
 
 CLUSTER_HEADING = ["epoch", "accuracy", "rand_score", "adjusted_rand_score", "calinksi_harabasz", "davies_bouldin"]
 
@@ -77,10 +78,16 @@ class Logging:
     def log_validation(self, step: int, val_cost: float):
         self.val_cost[step] = val_cost
 
-    def log_testing(self, epoch, kernel_obj, n_clusters, test_X, test_Y, train_X=None, train_Y=None):
+    def log_testing(self, epoch, kernel, n_clusters, test_X, test_Y, train_X=None, train_Y=None):
         if epoch % self.testing_interval == 0:
+            X_kernel = qml.kernels.square_kernel_matrix(test_X, kernel)
             for idx, alg in enumerate(self.testing_algorithms):
-                labels = clustering(alg, self.testing_algorithm_params[idx], kernel_obj, n_clusters, test_X, train_X, train_Y)
+                if alg == "svm":
+                    train_X_kernel = qml.kernels.square_kernel_matrix(train_X, kernel)
+                    train_test_X_kernel = qml.kernels.kernel_matrix(test_X, train_X, kernel)
+                    labels = classification(train_X_kernel, train_Y, train_test_X_kernel, "precomputed", self.testing_algorithm_params[idx])
+                else:
+                    labels = clustering(alg, self.testing_algorithm_params[idx], "precomputed", n_clusters, X_kernel)
                 result = get_cluster_result(alg, test_X, test_Y, labels)
 
                 if not alg in self.testing:
