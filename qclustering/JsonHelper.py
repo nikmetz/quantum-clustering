@@ -4,6 +4,7 @@ import shutil
 import qclustering.datasets
 import time
 import datetime
+import multiprocessing
 from qclustering.QuantumVariationalKernel import QuantumVariationalKernel
 from qclustering.utils import get_params
 from pennylane import numpy as np
@@ -37,6 +38,13 @@ def run_json_config(js, path=""):
 
     ansatz = get_ansatz(ansatz_name, wires, layers, ansatz_params)
 
+    num_processes = js.get("num_processes", 1)
+
+    if num_processes > 1:
+        pool = multiprocessing.Pool(processes=num_processes)
+    else:
+        pool = None
+
     qvk = QuantumVariationalKernel(wires, ansatz, init_params, device, shots)
 
     data = qclustering.datasets.load_data(
@@ -48,6 +56,7 @@ def run_json_config(js, path=""):
         testing_interval = js.get("clustering_interval", 100),
         testing_algorithms = js.get("clustering_algorithm", ["kmeans"]),
         testing_algorithm_params = js.get("clustering_algorithm_params", [{}]),
+        process_pool = pool,
         path = path
     )
 

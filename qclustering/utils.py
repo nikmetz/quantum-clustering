@@ -1,6 +1,39 @@
 import autograd.numpy as np
 import matplotlib.pyplot as plt
 
+def __kernel_help(i, j, x, y, kernel):
+    return (i, j, kernel(x, y))
+
+def parallel_square_kernel_matrix(X, kernel, assume_normalized_kernel=False, pool=None):
+    N = len(X)
+    matrix = [0] * N ** 2
+    jobs = []
+    for i in range(N):
+        for j in range(i, N):
+            if assume_normalized_kernel and i == j:
+                matrix[N * i + j] = 1.0
+            else:
+                jobs.append((i, j, X[i], X[j], kernel))
+
+    results = pool.starmap(__kernel_help, jobs)
+    for x in results:
+        matrix[N * x[0] + x[1]] = x[2]
+        matrix[N * x[1] + x[0]] = x[2]
+
+    return np.array(matrix).reshape((N, N))
+
+def parallel_kernel_matrix(X1, X2, kernel, pool):
+    N = len(X1)
+    M = len(X2)
+
+    matrix = [0] * N * M
+    for i in range(N):
+        for j in range(M):
+            matrix[M * i + j] = (X1[i], X2[j])
+    matrix = pool.starmap(kernel, matrix)
+
+    return np.array(matrix).reshape((N, M))
+
 def get_params(strategy="random", **params):
     if strategy == "random":
         return random_params(**params)

@@ -5,6 +5,7 @@ from pennylane import numpy as np
 from itertools import permutations
 from pathlib import Path
 from qclustering.Clustering import clustering, classification
+from qclustering.utils import parallel_kernel_matrix, parallel_square_kernel_matrix
 import matplotlib.pyplot as plt
 import copy
 import csv
@@ -57,10 +58,11 @@ def get_cluster_result(algorithm, X, labels_true, labels_pred) -> ClusterResult:
 
 class Logging:
 
-    def __init__(self, testing_interval, testing_algorithms, testing_algorithm_params, path):
+    def __init__(self, testing_interval, testing_algorithms, testing_algorithm_params, process_pool, path):
         self.testing_interval = testing_interval
         self.testing_algorithms = testing_algorithms
         self.testing_algorithm_params = testing_algorithm_params
+        self.process_pool = process_pool
         self.path = path
         self.prepare_folders()
 
@@ -80,13 +82,24 @@ class Logging:
 
     def log_testing(self, epoch, kernel, n_clusters, test_X, test_Y, train_X=None, train_Y=None):
         if epoch % self.testing_interval == 0:
-            X_kernel = qml.kernels.square_kernel_matrix(test_X, kernel)
+            X_kernel = None
+
             for idx, alg in enumerate(self.testing_algorithms):
                 if alg == "svm":
-                    train_X_kernel = qml.kernels.square_kernel_matrix(train_X, kernel)
-                    train_test_X_kernel = qml.kernels.kernel_matrix(test_X, train_X, kernel)
+                    if self.process_pool is None:
+                        train_X_kernel = qml.kernels.square_kernel_matrix(train_X, kernel)
+                        train_test_X_kernel = qml.kernels.kernel_matrix(test_X, train_X, kernel)
+                    else:
+                        train_X_kernel = parallel_square_kernel_matrix(train_X, kernel, pool=self.process_pool)
+                        train_test_X_kernel = parallel_kernel_matrix(test_X, train_X, kernel, pool=self.process_pool)
                     labels = classification(train_X_kernel, train_Y, train_test_X_kernel, "precomputed", self.testing_algorithm_params[idx])
+
                 else:
+                    if X_kernel is None:
+                        if self.process_pool is None:
+                            X_kernel = qml.kernels.square_kernel_matrix(test_X, kernel)
+                        else:
+                            X_kernel = parallel_square_kernel_matrix(test_X, kernel, pool=self.process_pool)
                     labels = clustering(alg, self.testing_algorithm_params[idx], "precomputed", n_clusters, X_kernel)
                 result = get_cluster_result(alg, test_X, test_Y, labels)
 
