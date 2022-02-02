@@ -58,7 +58,10 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
     def fit(self, X, y=None, sample_weight=None):
         n_samples = X.shape[0]
 
-        K = self._get_kernel(X)
+        if self.kernel == "precomputed":
+            K = X
+        else:
+            K = self._get_kernel(X)
 
         sw = sample_weight if sample_weight else np.ones(n_samples)
         self.sample_weight_ = sw
