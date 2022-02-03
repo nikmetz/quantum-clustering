@@ -9,7 +9,7 @@ from pennylane import numpy as np
 def load_data(
     dataset: str,
     two_classes = False,
-    **dataset_params
+    dataset_params = {}
 ) -> DataSet:
     """
     Returns the data for the requested ``dataset``.
