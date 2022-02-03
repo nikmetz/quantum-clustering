@@ -1,5 +1,5 @@
 from qclustering.datasets.generated import generate
-from qclustering.datasets.generated import symmetric_donuts, test_donuts
+from qclustering.datasets.generated import donuts
 from qclustering.datasets.iris import iris
 from qclustering.datasets.mnist import mnist
 from qclustering.datasets.utils import DataSet
@@ -9,7 +9,7 @@ from pennylane import numpy as np
 def load_data(
     dataset: str,
     two_classes = False,
-    dataset_params = {}
+    **dataset_params
 ) -> DataSet:
     """
     Returns the data for the requested ``dataset``.
@@ -32,9 +32,7 @@ def load_data(
     elif dataset in ["circles", "moons", "classification", "blobs"]:
         data = generate(dataset=dataset, **dataset_params)
     elif dataset == "donuts":
-        data = symmetric_donuts(**dataset_params)
-    elif dataset == "test_donuts":
-        data = test_donuts(**dataset_params)
+        data = donuts(**dataset_params)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
 
