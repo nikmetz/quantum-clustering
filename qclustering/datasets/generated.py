@@ -25,7 +25,7 @@ def generate(dataset, **dataset_params) -> DataSet:
 
     return DataSet(x_train, y_train, x_val, y_val, x_test, y_test)
 
-def single_donut(num_samples, num_donuts, donut_inner_distance = 0.25):
+def single_donut(num_samples, num_donuts, donut_inner_distance = 0.25, switch_label=True):
     if donut_inner_distance < 0.0 or donut_inner_distance >= 0.5:
         raise ValueError(f"Donut inner distance has to be in range [0.0, 0.5). {donut_inner_distance} is not allowed.")
 
@@ -33,6 +33,7 @@ def single_donut(num_samples, num_donuts, donut_inner_distance = 0.25):
 
     inv_sqrt2 = 1/np.sqrt(2)
     x_donut = 1
+    x_donut_label = 1
     i = 0
     while (i<num_samples):
         x = np.random.uniform(-inv_sqrt2,inv_sqrt2, 2)
@@ -41,13 +42,15 @@ def single_donut(num_samples, num_donuts, donut_inner_distance = 0.25):
             if r_squared < 0.0 + (0.5 - donut_inner_distance)/2:
                 i += 1
                 x_data.append([x_donut+x[0],x[1]])
-                y_data.append(x_donut)
+                y_data.append(x_donut_label)
             elif r_squared > 0.5 - (0.5 - donut_inner_distance)/2:
                 i += 1
                 x_data.append([x_donut+x[0],x[1]])
-                y_data.append(-x_donut)
+                y_data.append(-x_donut_label)
             if x_donut == 1 and num_donuts == 2 and i==num_samples//2:
                 x_donut = -1
+                if switch_label:
+                    x_donut_label = -1
 
     return np.array(x_data), np.array(y_data)
 
@@ -59,14 +62,17 @@ def donuts(
     train_donut_inner_distance = 0.25,
     val_donut_inner_distance = None,
     test_donut_inner_distance = None,
+    switch_label = True,
 ):
+    if num_donuts < 1 or num_donuts > 2:
+        raise ValueError(f"Number of donuts has to be 1 or 2. {num_donuts} is not allowed.")
     if val_donut_inner_distance is None:
         val_donut_inner_distance = train_donut_inner_distance
     if test_donut_inner_distance is None:
         test_donut_inner_distance = train_donut_inner_distance
     
-    x_train, y_train = single_donut(train_size, num_donuts, train_donut_inner_distance)
-    x_test, y_test = single_donut(test_size, num_donuts, test_donut_inner_distance)
-    x_val, y_val = single_donut(val_size, num_donuts, val_donut_inner_distance)
+    x_train, y_train = single_donut(train_size, num_donuts, train_donut_inner_distance, switch_label)
+    x_test, y_test = single_donut(test_size, num_donuts, test_donut_inner_distance, switch_label)
+    x_val, y_val = single_donut(val_size, num_donuts, val_donut_inner_distance, switch_label)
 
     return DataSet(x_train, y_train, x_val, y_val, x_test, y_test)
