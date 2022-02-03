@@ -10,7 +10,7 @@ from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.utils import check_random_state
 
 
-class KernelKMeans(BaseEstimator, ClusterMixin):
+class OriginalKernelKMeans(BaseEstimator, ClusterMixin):
     """
     Kernel K-means
     
@@ -94,7 +94,8 @@ class KernelKMeans(BaseEstimator, ClusterMixin):
             mask = self.labels_ == j
 
             if np.sum(mask) == 0:
-                raise ValueError("Empty cluster found, try smaller n_cluster.")
+                #raise ValueError("Empty cluster found, try smaller n_cluster.")
+                print("Empty cluster found, try smaller n_cluster.")
 
             denom = sw[mask].sum()
             denomsq = denom * denom

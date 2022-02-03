@@ -1,4 +1,5 @@
 from qclustering.KernelKMeans import KernelKMeans
+from qclustering.OriginalKernelKMeans import OriginalKernelKMeans
 from sklearn.cluster import SpectralClustering, AgglomerativeClustering, DBSCAN, OPTICS
 from sklearn.svm import SVC
 
@@ -12,6 +13,9 @@ def clustering(algorithm, algorithm_params, kernel, n_clusters, X):
 
     if algorithm  == "kmeans":
         kmeans = KernelKMeans(n_clusters=n_clusters, kernel=kernel, **algorithm_params)
+        return kmeans.fit(X).labels_
+    elif algorithm == "original-kmeans":
+        kmeans = OriginalKernelKMeans(n_clusters=n_clusters, kernel=kernel, **algorithm_params)
         return kmeans.fit(X).labels_
     elif algorithm == "spectral":
         spectral = SpectralClustering(n_clusters=n_clusters, affinity=kernel, **algorithm_params)
