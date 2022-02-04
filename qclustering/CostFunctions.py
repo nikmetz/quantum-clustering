@@ -1,4 +1,4 @@
-from pennylane import numpy as np
+import autograd.numpy as np
 import pennylane as qml
 
 def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
@@ -41,18 +41,26 @@ def multiclass_target_alignment(X, Y, kernel, num_classes, assume_normalized_ker
 
     return qml.math.frobenius_inner_product(centered_kernel_mat(K), centered_kernel_mat(T), normalize=True)
 
-def kernel_penalty(X, Y, kernel, inner_penalty=1, inter_penalty=1):
+def kernel_penalty(X, Y, kernel, strategy="mean", inner_penalty=1, inter_penalty=1):
     K = qml.kernels.square_kernel_matrix(X, kernel, assume_normalized_kernel=False)
-    inner_sum = 0.0
-    inter_sum = 0.0
+    inner = 0.0
+    inter = 0.0
+    inner_count = 0
+    inter_count = 0
 
     for x in range(len(X)):
         for y in range(x, len(X), 1):
             if Y[x] == Y[y]:
-                inner_sum += 1 - K[x][y]
+                inner += 1 - K[x][y]
+                inner_count += 1
             else:
-                inter_sum += K[x][y]
-    return inner_penalty * inner_sum + inter_penalty * inter_sum
+                inter += K[x][y]
+                inter_count += 1
+    if strategy == "mean":
+        inner = inner/inner_count
+        inter = inter/inter_count
+
+    return inner_penalty * inner + inter_penalty * inter
 
 def triplet_loss(X, labels, dist_func, **kwargs):
     strategy = kwargs.get("strategy", "random")
