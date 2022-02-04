@@ -48,6 +48,9 @@ class QuantumVariationalKernel():
 
         n_clusters = np.unique(train_Y).shape[0]
 
+        if logging_obj is not None:
+            logging_obj.log_testing(0, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)
+
         for epoch in range(epochs):
             lrate = learning_rate * (1 / (1+learning_rate_decay*epoch))
             if optimizer_name == "GradientDescent":
