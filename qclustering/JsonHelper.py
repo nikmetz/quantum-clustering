@@ -47,10 +47,13 @@ def run_json_config(js, path=""):
 
     qvk = QuantumVariationalKernel(wires, ansatz, init_params, device, shots)
 
+    dataset_params = js.get("dataset_params", {})
+
     data = qclustering.datasets.load_data(
         dataset = js.get("dataset"),
-        two_classes = js.get("dataset_params", {}).pop("two_classes", False),
-        dataset_params = js.get("dataset_params", {}))
+        two_classes = dataset_params.pop("two_classes", False),
+        scale = dataset_params.pop("scale", 0),
+        dataset_params = dataset_params)
 
     logging_obj = Logging(
         testing_interval = js.get("clustering_interval", 100),
