@@ -11,10 +11,9 @@ import copy
 import csv
 import pennylane as qml
 
-CLUSTER_HEADING = ["epoch", "accuracy", "rand_score", "adjusted_rand_score", "calinksi_harabasz", "davies_bouldin"]
+CLUSTER_HEADING = ["epoch", "rand_score", "adjusted_rand_score", "calinksi_harabasz", "davies_bouldin"]
 
 class ClusterResult(NamedTuple):
-    accuracy: float
     rand_score: float
     adjusted_rand_score: float
     calinski_harabasz: float
@@ -41,10 +40,10 @@ def cluster_accuracy(true_labels, pred_labels):
     return acc
 
 def get_cluster_result(algorithm, X, labels_true, labels_pred) -> ClusterResult:
-    if algorithm == "svm":
-        acc = accuracy(labels_true, labels_pred)
-    else:
-        acc = cluster_accuracy(labels_true, labels_pred)
+    #if algorithm == "svm":
+    #    acc = accuracy(labels_true, labels_pred)
+    #else:
+    #    acc = cluster_accuracy(labels_true, labels_pred)
     rand_score = metrics.rand_score(labels_true, labels_pred)
     adjusted_rand_score = metrics.adjusted_rand_score(labels_true, labels_pred)
     if len(np.unique(labels_pred)) < 2:
@@ -54,7 +53,7 @@ def get_cluster_result(algorithm, X, labels_true, labels_pred) -> ClusterResult:
         calinski_harabasz = metrics.calinski_harabasz_score(X, labels_pred)
         davies_bouldin = metrics.davies_bouldin_score(X, labels_pred)
 
-    return ClusterResult(acc, rand_score, adjusted_rand_score, calinski_harabasz, davies_bouldin)
+    return ClusterResult(rand_score, adjusted_rand_score, calinski_harabasz, davies_bouldin)
 
 class Logging:
 
@@ -136,7 +135,7 @@ class Logging:
 
     def generate_cluster_imgs(self, path, result):
         clustering_steps = list(result.keys())
-        simple_plot(clustering_steps, [result[x].accuracy for x in clustering_steps], "Steps", "Accuracy", Path(path, "accuracy.png"))
+        #simple_plot(clustering_steps, [result[x].accuracy for x in clustering_steps], "Steps", "Accuracy", Path(path, "accuracy.png"))
         simple_plot(clustering_steps, [result[x].rand_score for x in clustering_steps], "Steps", "Rand score", Path(path, "rand_score.png"))
         simple_plot(clustering_steps, [result[x].adjusted_rand_score for x in clustering_steps], "Steps", "Adjusted rand score", Path(path, "adjusted_rand_score.png"))
         simple_plot(clustering_steps, [result[x].calinski_harabasz for x in clustering_steps], "Steps", "Calinski harabasz", Path(path, "calinski_harabasz.png"))
