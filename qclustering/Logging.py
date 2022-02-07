@@ -137,10 +137,10 @@ class Logging:
     def generate_cluster_imgs(self, path, result):
         clustering_steps = list(result.keys())
         #simple_plot(clustering_steps, [result[x].accuracy for x in clustering_steps], "Steps", "Accuracy", Path(path, "accuracy.png"))
-        simple_plot(clustering_steps, [result[x].rand_score for x in clustering_steps], "Steps", "Rand score", Path(path, "rand_score.png"), [0,1])
-        simple_plot(clustering_steps, [result[x].adjusted_rand_score for x in clustering_steps], "Steps", "Adjusted rand score", Path(path, "adjusted_rand_score.png"), [-1, 1])
-        simple_plot(clustering_steps, [result[x].calinski_harabasz for x in clustering_steps], "Steps", "Calinski harabasz", Path(path, "calinski_harabasz.png"))
-        simple_plot(clustering_steps, [result[x].davies_bouldin for x in clustering_steps], "Steps", "Davies bouldin", Path(path, "davies_bouldin.png"))
+        simple_plot(clustering_steps, [result[x].rand_score for x in clustering_steps], "Epoch", "Rand score", Path(path, "rand_score.png"), [0,1])
+        simple_plot(clustering_steps, [result[x].adjusted_rand_score for x in clustering_steps], "Epoch", "Adjusted rand score", Path(path, "adjusted_rand_score.png"), [-1, 1])
+        simple_plot(clustering_steps, [result[x].calinski_harabasz for x in clustering_steps], "Epoch", "Calinski harabasz", Path(path, "calinski_harabasz.png"))
+        simple_plot(clustering_steps, [result[x].davies_bouldin for x in clustering_steps], "Epoch", "Davies bouldin", Path(path, "davies_bouldin.png"))
 
     def visualize_cluster(self, X, labels, path):
         xs, ys = np.split(X, 2, axis=1)
