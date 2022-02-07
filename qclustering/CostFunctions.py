@@ -57,8 +57,10 @@ def kernel_penalty(X, Y, kernel, strategy="mean", inner_penalty=1, inter_penalty
                 inter += K[x][y]
                 inter_count += 1
     if strategy == "mean":
-        inner = inner/inner_count
-        inter = inter/inter_count
+        if inner_count > 0:
+            inner = inner/inner_count
+        if inter_count > 0:
+            inter = inter/inter_count
 
     return inner_penalty * inner + inter_penalty * inter
 
