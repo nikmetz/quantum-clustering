@@ -1,5 +1,6 @@
 import autograd.numpy as np
 import matplotlib.pyplot as plt
+from sklearn.manifold import MDS
 
 def __kernel_help(i, j, x, y, kernel):
     return (i, j, kernel(x, y))
@@ -71,3 +72,11 @@ def simple_plot(xs, ys, xlabel, ylabel, filename, ylimit=None):
         ax.set_ylim(ylimit)
     plt.savefig(filename)
     return
+
+def plot_kernel(kernel_mat, y_test, path):
+    embedding = MDS(n_components=2, dissimilarity="precomputed")
+    dissimilarities = 1 - kernel_mat
+    X_transformed = embedding.fit_transform(dissimilarities, y_test)
+
+    plt.scatter(X_transformed[:,0], X_transformed[:,1], c=y_test)
+    plt.savefig(path)

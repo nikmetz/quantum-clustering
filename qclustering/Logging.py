@@ -1,6 +1,6 @@
 from typing import NamedTuple
 from sklearn import metrics
-from qclustering.utils import simple_plot
+from qclustering.utils import simple_plot, plot_kernel
 from pennylane import numpy as np
 from itertools import permutations
 from pathlib import Path
@@ -70,6 +70,7 @@ class Logging:
         self.testing = {}
 
     def prepare_folders(self):
+        Path(self.path, "kernel").mkdir(parents=True, exist_ok=True)
         for x in self.testing_algorithms:
             Path(self.path, x).mkdir(parents=True, exist_ok=True)
 
@@ -81,7 +82,12 @@ class Logging:
 
     def log_testing(self, epoch, kernel, n_clusters, test_X, test_Y, train_X=None, train_Y=None):
         if epoch % self.testing_interval == 0:
-            X_kernel = None
+            if self.process_pool is None:
+                X_kernel = qml.kernels.square_kernel_matrix(test_X, kernel)
+            else:
+                X_kernel = parallel_square_kernel_matrix(test_X, kernel, pool=self.process_pool)
+
+            plot_kernel(X_kernel, test_Y, Path(self.path, "kernel", str(epoch)+".png"))
 
             for idx, alg in enumerate(self.testing_algorithms):
                 if alg == "svm":
@@ -94,11 +100,6 @@ class Logging:
                     labels = classification(train_X_kernel, train_Y, train_test_X_kernel, "precomputed", self.testing_algorithm_params[idx])
 
                 else:
-                    if X_kernel is None:
-                        if self.process_pool is None:
-                            X_kernel = qml.kernels.square_kernel_matrix(test_X, kernel)
-                        else:
-                            X_kernel = parallel_square_kernel_matrix(test_X, kernel, pool=self.process_pool)
                     labels = clustering(alg, self.testing_algorithm_params[idx], "precomputed", n_clusters, X_kernel)
                 result = get_cluster_result(alg, test_X, test_Y, labels)
 
