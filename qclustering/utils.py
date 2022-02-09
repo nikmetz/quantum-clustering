@@ -70,7 +70,7 @@ def simple_plot(xs, ys, xlabel, ylabel, filename, ylimit=None):
     ax.set_ylabel(ylabel)
     if ylimit is not None:
         ax.set_ylim(ylimit)
-    plt.savefig(filename)
+    fig.savefig(filename)
     return
 
 def plot_kernel(kernel_mat, y_test, path):
@@ -78,5 +78,7 @@ def plot_kernel(kernel_mat, y_test, path):
     dissimilarities = 1 - kernel_mat
     X_transformed = embedding.fit_transform(dissimilarities, y_test)
 
-    plt.scatter(X_transformed[:,0], X_transformed[:,1], c=y_test)
-    plt.savefig(path)
+    fig, ax = plt.subplots()
+    ax.scatter(X_transformed[:,0], X_transformed[:,1], c=y_test)
+    fig.savefig(path)
+    return

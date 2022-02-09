@@ -149,5 +149,5 @@ class Logging:
 
         fig, ax = plt.subplots()
         a = ax.scatter(xs, ys, c=labels)
-        plt.savefig(path)
+        fig.savefig(path)
         return
