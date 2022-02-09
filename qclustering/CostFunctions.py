@@ -6,8 +6,8 @@ def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
         return lambda X, Y, params: -multiclass_target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, **cost_func_params)
     elif cost_func_name == "original-KTA-supervised":
         return lambda X, Y, params: -qml.kernels.target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
-    elif cost_func_name == "kernel-penalty":
-        return lambda X, Y, params: kernel_penalty(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
+    elif cost_func_name == "hilbert_schmidt":
+        return lambda X, Y, params: hilbert_schmidt(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params))
     elif cost_func_name == "KTA-unsupervised":
         pass
     elif cost_func_name == "triplet-loss-supervised":
@@ -41,7 +41,7 @@ def multiclass_target_alignment(X, Y, kernel, num_classes, assume_normalized_ker
 
     return qml.math.frobenius_inner_product(centered_kernel_mat(K), centered_kernel_mat(T), normalize=True)
 
-def kernel_penalty(X, Y, kernel, strategy="mean", inner_penalty=1, inter_penalty=1):
+def hilbert_schmidt(X, Y, kernel):
     K = qml.kernels.square_kernel_matrix(X, kernel, assume_normalized_kernel=False)
     inner = 0.0
     inter = 0.0
@@ -56,13 +56,13 @@ def kernel_penalty(X, Y, kernel, strategy="mean", inner_penalty=1, inter_penalty
             else:
                 inter += K[x][y]
                 inter_count += 1
-    if strategy == "mean":
-        if inner_count > 0:
+    if inner_count > 0:
             inner = inner/inner_count
-        if inter_count > 0:
-            inter = inter/inter_count
+    if inter_count > 0:
+        inter = inter/inter_count
+    
+    return 1 - 0.5 * (inner - (2 * inter))
 
-    return inner_penalty * inner + inter_penalty * inter
 
 def triplet_loss(X, labels, dist_func, **kwargs):
     strategy = kwargs.get("strategy", "random")
