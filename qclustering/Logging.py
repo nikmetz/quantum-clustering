@@ -87,7 +87,7 @@ class Logging:
             else:
                 X_kernel = parallel_square_kernel_matrix(test_X, kernel, pool=self.process_pool)
 
-            plot_kernel(X_kernel, test_Y, Path(self.path, "kernel", str(epoch)+".png"))
+            plot_kernel(X_kernel, test_Y, epoch, Path(self.path, "kernel", str(epoch)+".png"))
 
             for idx, alg in enumerate(self.testing_algorithms):
                 if alg == "svm":
@@ -137,8 +137,8 @@ class Logging:
     def generate_cluster_imgs(self, path, result):
         clustering_steps = list(result.keys())
         #simple_plot(clustering_steps, [result[x].accuracy for x in clustering_steps], "Steps", "Accuracy", Path(path, "accuracy.png"))
-        simple_plot(clustering_steps, [result[x].rand_score for x in clustering_steps], "Epoch", "Rand score", Path(path, "rand_score.png"), [0,1])
-        simple_plot(clustering_steps, [result[x].adjusted_rand_score for x in clustering_steps], "Epoch", "Adjusted rand score", Path(path, "adjusted_rand_score.png"), [-1, 1])
+        simple_plot(clustering_steps, [result[x].rand_score for x in clustering_steps], "Epoch", "Rand score", Path(path, "rand_score.png"), [0,1.1])
+        simple_plot(clustering_steps, [result[x].adjusted_rand_score for x in clustering_steps], "Epoch", "Adjusted rand score", Path(path, "adjusted_rand_score.png"), [-1.1, 1.1])
         simple_plot(clustering_steps, [result[x].calinski_harabasz for x in clustering_steps], "Epoch", "Calinski harabasz", Path(path, "calinski_harabasz.png"))
         simple_plot(clustering_steps, [result[x].davies_bouldin for x in clustering_steps], "Epoch", "Davies bouldin", Path(path, "davies_bouldin.png"))
 

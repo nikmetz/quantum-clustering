@@ -73,12 +73,15 @@ def simple_plot(xs, ys, xlabel, ylabel, filename, ylimit=None):
     fig.savefig(filename)
     return
 
-def plot_kernel(kernel_mat, y_test, path):
+def plot_kernel(kernel_mat, y_test, epoch, path):
     embedding = MDS(n_components=2, dissimilarity="precomputed")
     dissimilarities = 1 - kernel_mat
     X_transformed = embedding.fit_transform(dissimilarities, y_test)
 
     fig, ax = plt.subplots()
     ax.scatter(X_transformed[:,0], X_transformed[:,1], c=y_test)
+    ax.set_ylim([-1,1])
+    ax.set_xlim([-1,1])
+    fig.suptitle("Epoch: "+str(epoch))
     fig.savefig(path)
     return
