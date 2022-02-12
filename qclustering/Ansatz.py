@@ -3,64 +3,93 @@ from math import gcd
 
 def get_ansatz(name, num_wires, num_layers, params):
     if name == "ansatz1":
-        return lambda x, p: ansatz(x, p, num_wires)
+        return Ansatz1(num_wires, num_layers)
     elif name == "ansatz2":
-        return lambda x, p: ansatz2(x, p, num_wires)
+        return Ansatz2(num_wires, num_layers)
     elif name == "ansatz3":
-        return lambda x, p: ansatz3(x, p, num_wires)
+        return Ansatz3(num_wires, num_layers)
     elif name == "ansatz4":
-        return lambda x, p: ansatz4(x, p, num_wires, num_layers, **params)
+        return Ansatz4(num_wires, num_layers, **params)
 
-def layer(x, params, wires, i0=0, inc=1):
-    """Building block of the embedding ansatz"""
-    i = i0
-    for wire in range(wires):
-        qml.Hadamard(wires=wire)
-        qml.RZ(x[i % len(x)], wires=wire)
-        i += inc
-        qml.RY(params[wire, 0], wires=wire)
+class Ansatz():
+    def __init__(self, num_wires, num_layers):
+        self.num_wires = num_wires
+        self.num_layers = num_layers
 
-    qml.broadcast(unitary=qml.CRZ, pattern="ring", wires=range(wires), parameters=params[:, 1])
+    def ansatz(self, data, params):
+        pass
 
-def ansatz(x, params, wires):
-    for j, layer_params in enumerate(params):
-        layer(x, layer_params, wires, i0=j * wires)
+    def adjoint_ansatz(self, data, params):
+        qml.adjoint(self.ansatz)(data, params)
 
-def ansatz2(data, params, wires):
-    for j, layer_params in enumerate(params):
+class Ansatz1(Ansatz):
+    def __init__(self, num_wires, num_layers):
+        Ansatz.__init__(self, num_wires, num_layers)
+
+    def ansatz(self, data, params):
+        for j, layer_params in enumerate(params):
+            self.layer(data, layer_params, self.num_wires, i0=j * self.num_wires)
+
+    def layer(self, x, params, wires, i0=0, inc=1):
+        """Building block of the embedding ansatz"""
+        i = i0
         for wire in range(wires):
-            qml.RX(layer_params[wire][0], wires=wire)
-            qml.RY(layer_params[wire][1], wires=wire)
-        for wire in range(0, wires - 1, 2):
-            qml.CZ(wires=[wire, wire + 1])
-        for wire in range(1, wires - 1, 2):
-            qml.CZ(wires=[wire, wire + 1])
-    qml.templates.embeddings.AngleEmbedding(
-        features=data, wires=range(wires), rotation="X"
-    )
+            qml.Hadamard(wires=wire)
+            qml.RZ(x[i % len(x)], wires=wire)
+            i += inc
+            qml.RY(params[wire, 0], wires=wire)
 
-def ansatz3(data, params, wires):
-    for j, layer_params in enumerate(params):
-        for wire in range(wires):
-            qml.RX(layer_params[wire][0], wires=wire)
-            qml.RY(layer_params[wire][1], wires=wire)
-        for wire in range(0, wires - 1, 2):
-            qml.CZ(wires=[wire, wire + 1])
-        for wire in range(1, wires - 1, 2):
-            qml.CZ(wires=[wire, wire + 1])
+        qml.broadcast(unitary=qml.CRZ, pattern="ring", wires=range(wires), parameters=params[:, 1])
+
+class Ansatz2(Ansatz):
+    def __init__(self, num_wires, num_layers):
+        Ansatz.__init__(self, num_wires, num_layers)
+
+    def ansatz2(self, data, params):
+        for j, layer_params in enumerate(params):
+            for wire in range(self.num_wires):
+                qml.RX(layer_params[wire][0], wires=wire)
+                qml.RY(layer_params[wire][1], wires=wire)
+            for wire in range(0, self.num_wires - 1, 2):
+                qml.CZ(wires=[wire, wire + 1])
+            for wire in range(1, self.num_wires - 1, 2):
+                qml.CZ(wires=[wire, wire + 1])
         qml.templates.embeddings.AngleEmbedding(
-            features=data, wires=range(wires), rotation="X"
+            features=data, wires=range(self.num_wires), rotation="X"
         )
 
-def ansatz4(data, params, num_wires, num_layers, r, gate_types):
-    for layer in range(num_layers):
-        for wire in range(num_wires):
-            getattr(qml, gate_types[layer][0])(params[layer][wire][0], wires=[wire])
-        for i in range(int(num_wires/gcd(num_wires, r[layer]))):
-            target = (i * r[layer] - r[layer]) % num_wires
-            control = i * r[layer] % num_wires
-            getattr(qml, gate_types[layer][1])(params[layer][wire][1], wires=[control, target])
+class Ansatz3(Ansatz):
+    def __init__(self, num_wires, num_layers):
+        Ansatz.__init__(self, num_wires, num_layers)
 
-        qml.templates.embeddings.AngleEmbedding(
-            features=data, wires=range(num_wires), rotation="X"
-        )
+    def ansatz3(self, data, params):
+        for j, layer_params in enumerate(params):
+            for wire in range(self.num_wires):
+                qml.RX(layer_params[wire][0], wires=wire)
+                qml.RY(layer_params[wire][1], wires=wire)
+            for wire in range(0, self.num_wires - 1, 2):
+                qml.CZ(wires=[wire, wire + 1])
+            for wire in range(1, self.num_wires - 1, 2):
+                qml.CZ(wires=[wire, wire + 1])
+            qml.templates.embeddings.AngleEmbedding(
+                features=data, wires=range(self.num_wires), rotation="X"
+            )
+
+class Ansatz4(Ansatz):
+    def __init__(self, num_wires, num_layers, r, gate_types):
+        Ansatz.__init__(self, num_wires, num_layers)
+        self.r = r
+        self.gate_types = gate_types
+
+    def ansatz4(self, data, params):
+        for layer in range(self.num_layers):
+            for wire in range(self.num_wires):
+                getattr(qml, self.gate_types[layer][0])(params[layer][wire][0], wires=[wire])
+            for i in range(int(self.num_wires/gcd(self.num_wires, self.r[layer]))):
+                target = (i * self.r[layer] - self.r[layer]) % self.num_wires
+                control = i * self.r[layer] % self.num_wires
+                getattr(qml, self.gate_types[layer][1])(params[layer][wire][1], wires=[control, target])
+
+            qml.templates.embeddings.AngleEmbedding(
+                features=data, wires=range(self.num_wires), rotation="X"
+            )

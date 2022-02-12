@@ -9,11 +9,10 @@ class QuantumVariationalKernel():
         self.qnode = qml.QNode(self.kernel_circuit, self.device)
         self.wires = wires
         self.params = init_params
-        self.adjoint_ansatz = qml.adjoint(self.ansatz)
 
     def kernel_circuit(self, x1, x2, params):
-        self.ansatz(x1, params)
-        self.adjoint_ansatz(x2, params)
+        self.ansatz.ansatz(x1, params)
+        self.ansatz.adjoint_ansatz(x2, params)
         return qml.probs(wires=self.device.wires.tolist())
 
     def kernel(self, x1, x2):
