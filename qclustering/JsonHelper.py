@@ -10,6 +10,7 @@ from qclustering.utils import get_params
 from pennylane import numpy as np
 from qclustering.Ansatz import get_ansatz
 from qclustering.Logging import Logging
+from qclustering.datasets.utils import DataSet
 
 def run_json_file(file):
     with open(file) as f:
@@ -54,6 +55,11 @@ def run_json_config(js, path=""):
         scale = dataset_params.pop("scale", 0),
         dataset_params = dataset_params
     )
+
+    if "train_data" in js and "train_target" in js:
+        train_data = np.array(js.get("train_data"))
+        train_target = np.array(js.get("train_target"))
+        data = DataSet(train_data, train_target, data.validation_data, data.validation_target, data.test_data, data.test_target)
 
     logging_obj = Logging(
         testing_interval = js.get("clustering_interval", 100),
