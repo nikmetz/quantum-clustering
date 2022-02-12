@@ -5,7 +5,7 @@ import qclustering.datasets
 import time
 import datetime
 import multiprocessing
-from qclustering.QuantumVariationalKernel import QuantumVariationalKernel
+from qclustering.QuantumVariationalKernel import OverlapQuantumVariationalKernel, SwapQuantumVariationalKernel
 from qclustering.utils import get_params
 from pennylane import numpy as np
 from qclustering.Ansatz import get_ansatz
@@ -23,6 +23,7 @@ def run_json_file(file):
     run_json_config(js, folder_name)
 
 def run_json_config(js, path=""):
+    circuit = js.get("circuit", "overlap")
     ansatz_name = js.get("ansatz", "ansatz1")
     ansatz_params = js.get("ansatz_params", {})
     wires = ansatz_params.pop("wires", 4)
@@ -45,8 +46,6 @@ def run_json_config(js, path=""):
     else:
         pool = None
 
-    qvk = QuantumVariationalKernel(wires, ansatz, init_params, device, shots)
-
     dataset_params = js.get("dataset_params", {})
 
     data = qclustering.datasets.load_data(
@@ -55,7 +54,7 @@ def run_json_config(js, path=""):
         scale = dataset_params.pop("scale", 0),
         dataset_params = dataset_params
     )
-    
+
     logging_obj = Logging(
         testing_interval = js.get("clustering_interval", 100),
         testing_algorithms = js.get("clustering_algorithm", ["kmeans"]),
@@ -63,6 +62,12 @@ def run_json_config(js, path=""):
         process_pool = pool,
         path = path
     )
+    if circuit == "overlap":
+        qvk = OverlapQuantumVariationalKernel(wires, ansatz, init_params, device, shots, logging_obj)
+    elif circuit == "swap":
+        qvk = SwapQuantumVariationalKernel(wires, ansatz, init_params, device, shots, logging_obj)
+    else:
+        raise ValueError(f"Unknown circuit name: {circuit}")
 
     qvk.train(
         data = data,
@@ -73,8 +78,7 @@ def run_json_config(js, path=""):
         optimizer_name = js.get("optimizer", "GradientDescent"),
         optimizer_params = js.get("optimizer_params", {}),
         cost_func_name = js.get("cost_func", "KTA-supervised"),
-        cost_func_params = js.get("cost_func_params", {}),
-        logging_obj=logging_obj
+        cost_func_params = js.get("cost_func_params", {})
     )
 
     return qvk

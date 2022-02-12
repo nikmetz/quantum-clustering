@@ -3,17 +3,16 @@ from qclustering.CostFunctions import get_cost_func
 from pennylane import numpy as np
 
 class QuantumVariationalKernel():
-    def __init__(self, wires, ansatz, init_params, device, shots):
+    def __init__(self, wires, ansatz, init_params, device, shots, logging_obj = None):
         self.device = qml.device(device, wires=wires, shots=shots)
         self.ansatz = ansatz
         self.qnode = qml.QNode(self.kernel_circuit, self.device)
         self.wires = wires
         self.params = init_params
+        self.logging_obj = logging_obj
 
     def kernel_circuit(self, x1, x2, params):
-        self.ansatz.ansatz(x1, params)
-        self.ansatz.adjoint_ansatz(x2, params)
-        return qml.probs(wires=self.device.wires.tolist())
+        pass
 
     def kernel(self, x1, x2):
         return self.kernel_with_params(x1, x2, self.params)
@@ -38,7 +37,6 @@ class QuantumVariationalKernel():
         optimizer_params = {},
         cost_func_name = "KTA-supervised",
         cost_func_params = {},
-        logging_obj = None
     ):
 
         train_X, train_Y = data.train_data, data.train_target
@@ -47,8 +45,8 @@ class QuantumVariationalKernel():
 
         n_clusters = np.unique(train_Y).shape[0]
 
-        if logging_obj is not None:
-            logging_obj.log_testing(0, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)
+        if self.logging_obj is not None:
+            self.logging_obj.log_testing(0, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)
 
         for epoch in range(epochs):
             lrate = learning_rate * (1 / (1+learning_rate_decay*epoch))
@@ -78,12 +76,29 @@ class QuantumVariationalKernel():
                 self.params, c = opt.step_and_cost(lambda _params: cost_func(train_X[subset], train_Y[subset], _params), self.params)
                 cost_val = cost_func(val_X, val_Y, self.params)
                 print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
-                if logging_obj is not None:
-                    logging_obj.log_training(epoch*batches+idx, c)
-                    logging_obj.log_validation(epoch*batches+idx, cost_val)
+                if self.logging_obj is not None:
+                    self.logging_obj.log_training(epoch*batches+idx, c)
+                    self.logging_obj.log_validation(epoch*batches+idx, cost_val)
 
-            if logging_obj is not None:
-                logging_obj.log_testing(epoch+1, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)
+            if self.logging_obj is not None:
+                self.logging_obj.log_testing(epoch+1, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)
 
-        if logging_obj is not None:
-            logging_obj.finish()
+        if self.logging_obj is not None:
+            self.logging_obj.finish()
+
+class OverlapQuantumVariationalKernel(QuantumVariationalKernel):
+    def __init__(self, wires, ansatz, init_params, device, shots, logging_obj):
+        QuantumVariationalKernel.__init__(self, wires, ansatz, init_params, device, shots, logging_obj)
+
+    def kernel_circuit(self, x1, x2, params):
+        self.ansatz.ansatz(x1, params)
+        self.ansatz.adjoint_ansatz(x2, params)
+        return qml.probs(wires=self.device.wires.tolist())
+
+class SwapQuantumVariationalKernel(QuantumVariationalKernel):
+    def __init__(self, wires, ansatz, init_params, device, shots, logging_obj):
+        QuantumVariationalKernel.__init__(self, wires, ansatz, init_params, device, shots, logging_obj)
+
+    def kernel_circuit(self, x1, x2, params):
+        #TODO
+        pass
