@@ -1,11 +1,15 @@
 import autograd.numpy as np
 import matplotlib.pyplot as plt
+import pennylane as qml
 from sklearn.manifold import MDS
 
 def __kernel_help(i, j, x, y, kernel):
     return (i, j, kernel(x, y))
 
 def parallel_square_kernel_matrix(X, kernel, assume_normalized_kernel=False, pool=None):
+    if pool is None:
+        return qml.kernels.square_kernel_matrix(X, kernel)
+
     N = len(X)
     matrix = [0] * N ** 2
     jobs = []
@@ -23,7 +27,10 @@ def parallel_square_kernel_matrix(X, kernel, assume_normalized_kernel=False, poo
 
     return np.array(matrix).reshape((N, N))
 
-def parallel_kernel_matrix(X1, X2, kernel, pool):
+def parallel_kernel_matrix(X1, X2, kernel, pool=None):
+    if pool is None:
+        return qml.kernels.kernel_matrix(X1, X2, kernel)
+        
     N = len(X1)
     M = len(X2)
 

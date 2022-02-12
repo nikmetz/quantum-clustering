@@ -53,8 +53,9 @@ def run_json_config(js, path=""):
         dataset = js.get("dataset"),
         two_classes = dataset_params.pop("two_classes", False),
         scale = dataset_params.pop("scale", 0),
-        dataset_params = dataset_params)
-
+        dataset_params = dataset_params
+    )
+    
     logging_obj = Logging(
         testing_interval = js.get("clustering_interval", 100),
         testing_algorithms = js.get("clustering_algorithm", ["kmeans"]),
