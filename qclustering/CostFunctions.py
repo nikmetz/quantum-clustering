@@ -1,5 +1,8 @@
 import autograd.numpy as np
 import pennylane as qml
+from qclustering.Clustering import clustering
+from itertools import permutations
+import copy
 
 def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
     if cost_func_name == "KTA-supervised":
@@ -8,6 +11,8 @@ def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
         return lambda X, Y, params: -qml.kernels.target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
     elif cost_func_name == "hilbert_schmidt":
         return lambda X, Y, params: hilbert_schmidt(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params))
+    elif cost_func_name == "clustering_risk":
+        return lambda X, Y, params: clustering_risk(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
     elif cost_func_name == "KTA-unsupervised":
         pass
     elif cost_func_name == "triplet-loss-supervised":
@@ -64,14 +69,12 @@ def hilbert_schmidt(X, Y, kernel):
     return 1 - 0.5 * (inner - (2 * inter))
 
 
-def triplet_loss(X, labels, dist_func, **kwargs):
-    strategy = kwargs.get("strategy", "random")
-    alpha = kwargs.get("alpha")
+def triplet_loss(X, labels, kernel, strategy="random", alpha=1):
 
     sum = 0.0
     if strategy == "minmax":
         #only needed for minmax strategy, not random
-        K = qml.kernels.square_kernel_matrix(X, dist_func, assume_normalized_kernel=False)
+        K = 1 - qml.kernels.square_kernel_matrix(X, kernel, assume_normalized_kernel=False)
 
     for anchor_idx, anchor in enumerate(X):
         
@@ -89,15 +92,45 @@ def triplet_loss(X, labels, dist_func, **kwargs):
         if strategy == "random":
             pos_idx = np.random.randint(X[positive_mask].shape[0], size=1)[0]
             neg_idx = np.random.randint(X[negative_mask].shape[0], size=1)[0]
-            dist_anchor_positive = dist_func(anchor, X[positive_mask][pos_idx])
-            dist_anchor_negative = dist_func(anchor, X[negative_mask][neg_idx])
+            dist_anchor_positive = 1 - kernel(anchor, X[positive_mask][pos_idx])
+            dist_anchor_negative = 1 - kernel(anchor, X[negative_mask][neg_idx])
         elif strategy == "minmax":
             current = K[anchor_idx]
             dist_anchor_positive = current[positive_mask].max()
             dist_anchor_negative = current[negative_mask].min()
         
-        # dist_func is a kernel function, which is a similarity function, but triplet loss uses distances
-        dist_anchor_positive = 1 - dist_anchor_positive
-        dist_anchor_negative = 1 - dist_anchor_negative
         sum = sum + max(dist_anchor_positive - dist_anchor_negative + alpha, 0)
     return sum
+
+def clustering_risk(X, labels, kernel, n_clusters):
+    K = qml.kernels.square_kernel_matrix(X, kernel, assume_normalized_kernel=False)
+    pred_labels = clustering("kmeans", {}, kernel, n_clusters, X)
+
+    cost = None
+
+    unique_labels = np.unique(labels)
+    permut = set(permutations(unique_labels))
+    unique_pred_labels = np.unique(pred_labels)
+
+    for x in permut:
+        a = copy.deepcopy(pred_labels)
+        masks = []
+        for l in unique_pred_labels:
+            masks.append(a == l)
+        for idx, y in enumerate(masks):
+            a[y] = x[idx]
+
+        su = 0.0
+        for idx, x in enumerate(labels):
+            su += x * a[idx]
+
+        c = 0.5 - (1/(2*len(labels))) * su
+
+        if cost is None:
+            cost = c
+        else:
+            cost = min(cost, c)
+
+    return cost
+
+        
