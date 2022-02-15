@@ -3,21 +3,21 @@ from qclustering.CostFunctions import get_cost_func
 from pennylane import numpy as np
 
 class QuantumVariationalKernel():
-    def __init__(self, wires, ansatz, init_params, device, shots, logging_obj = None):
-        self.device = qml.device(device, wires=wires, shots=shots)
+    def __init__(self, ansatz, init_params, device, logging_obj = None):
         self.ansatz = ansatz
-        self.qnode = qml.QNode(self.kernel_circuit, self.device)
+        self.qnode = qml.QNode(self.kernel_circuit, device)
+        self.wires = device.wires.tolist()
         self.params = init_params
         self.logging_obj = logging_obj
 
     def kernel_circuit(self, x1, x2, params):
         pass
 
+    def kernel_with_params(self, x1, x2, params):
+        pass
+
     def kernel(self, x1, x2):
         return self.kernel_with_params(x1, x2, self.params)
-
-    def kernel_with_params(self, x1, x2, params):
-        return self.qnode(x1, x2, params)[0]
 
     def distance(self, x1, x2):
         return 1 - self.kernel(x1, x2)
@@ -87,18 +87,34 @@ class QuantumVariationalKernel():
 
 class OverlapQuantumVariationalKernel(QuantumVariationalKernel):
     def __init__(self, wires, ansatz, init_params, device, shots, logging_obj):
-        QuantumVariationalKernel.__init__(self, wires, ansatz, init_params, device, shots, logging_obj)
-        self.wires = self.device.wires.tolist()
+        self.device = qml.device(device, wires=wires, shots=shots)
+        QuantumVariationalKernel.__init__(self, ansatz, init_params, self.device, logging_obj)
 
     def kernel_circuit(self, x1, x2, params):
         self.ansatz.ansatz(x1, params, self.wires)
         self.ansatz.adjoint_ansatz(x2, params, self.wires)
         return qml.probs(wires=self.wires)
 
+    def kernel_with_params(self, x1, x2, params):
+        return self.qnode(x1, x2, params)[0]
+
 class SwapQuantumVariationalKernel(QuantumVariationalKernel):
     def __init__(self, wires, ansatz, init_params, device, shots, logging_obj):
-        QuantumVariationalKernel.__init__(self, wires, ansatz, init_params, device, shots, logging_obj)
+        self.device = qml.device(device, wires=2*wires+1, shots=shots)
+        QuantumVariationalKernel.__init__(self, ansatz, init_params, self.device, logging_obj)
+        self.first_wires = self.wires[1:1+wires]
+        self.second_wires = self.wires[1+wires:]
 
     def kernel_circuit(self, x1, x2, params):
-        #TODO
-        pass
+        self.ansatz.ansatz(x1, params, self.first_wires)
+        self.ansatz.ansatz(x2, params, self.second_wires)
+
+        qml.Hadamard(wires=0)
+        for x, y in zip(self.first_wires, self.second_wires):
+            qml.CSWAP(wires=[0, x, y])
+        qml.Hadamard(wires=0)
+
+        return qml.expval(qml.PauliZ(0))
+
+    def kernel_with_params(self, x1, x2, params):
+        return self.qnode(x1, x2, params)

@@ -8,8 +8,8 @@ def get_ansatz(name, num_layers, params):
         return Ansatz2(num_layers)
     elif name == "ansatz3":
         return Ansatz3(num_layers)
-    elif name == "ansatz4":
-        return Ansatz4(num_layers, **params)
+    #elif name == "ansatz4":
+    #    return Ansatz4(num_layers, **params)
 
 class Ansatz():
     def __init__(self, num_layers):
@@ -33,11 +33,11 @@ class Ansatz1(Ansatz):
     def layer(self, x, params, wires, i0=0, inc=1):
         """Building block of the embedding ansatz"""
         i = i0
-        for wire in wires:
+        for idx, wire in enumerate(wires):
             qml.Hadamard(wires=[wire])
             qml.RZ(x[i % len(x)], wires=[wire])
             i += inc
-            qml.RY(params[wire, 0], wires=[wire])
+            qml.RY(params[idx, 0], wires=[wire])
 
         qml.broadcast(unitary=qml.CRZ, pattern="ring", wires=wires, parameters=params[:, 1])
 
@@ -47,9 +47,9 @@ class Ansatz2(Ansatz):
 
     def ansatz(self, data, params, wires):
         for layer_params in params:
-            for wire in wires:
-                qml.RX(layer_params[wire][0], wires=[wire])
-                qml.RY(layer_params[wire][1], wires=[wire])
+            for idx, wire in enumerate(wires):
+                qml.RX(layer_params[idx][0], wires=[wire])
+                qml.RY(layer_params[idx][1], wires=[wire])
             for wire in [(wires[i], wires[i+1]) for i in range(0, len(wires) - 1, 2)]:
                 qml.CZ(wires=[wire[0], wire[1]])
             for wire in [(wires[i], wires[i+1]) for i in range(1, len(wires) - 1, 2)]:
@@ -64,9 +64,9 @@ class Ansatz3(Ansatz):
 
     def ansatz(self, data, params, wires):
         for layer_params in params:
-            for wire in wires:
-                qml.RX(layer_params[wire][0], wires=wire)
-                qml.RY(layer_params[wire][1], wires=wire)
+            for idx, wire in enumerate(wires):
+                qml.RX(layer_params[idx][0], wires=wire)
+                qml.RY(layer_params[idx][1], wires=wire)
             for wire in [(wires[i], wires[i+1]) for i in range(0, len(wires) - 1, 2)]:
                 qml.CZ(wires=[wire[0], wire[1]])
             for wire in [(wires[i], wires[i+1]) for i in range(1, len(wires) - 1, 2)]:
