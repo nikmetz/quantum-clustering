@@ -38,7 +38,7 @@ def run_json_config(js, path=""):
 
     init_params = get_params(strategy=js.get("init_params"), num_wires=wires, num_layers=layers, params_per_wire=params_per_wire)
 
-    ansatz = get_ansatz(ansatz_name, wires, layers, ansatz_params)
+    ansatz = get_ansatz(ansatz_name, layers, ansatz_params)
 
     num_processes = js.get("num_processes", 1)
 

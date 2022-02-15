@@ -7,7 +7,6 @@ class QuantumVariationalKernel():
         self.device = qml.device(device, wires=wires, shots=shots)
         self.ansatz = ansatz
         self.qnode = qml.QNode(self.kernel_circuit, self.device)
-        self.wires = wires
         self.params = init_params
         self.logging_obj = logging_obj
 
@@ -89,11 +88,12 @@ class QuantumVariationalKernel():
 class OverlapQuantumVariationalKernel(QuantumVariationalKernel):
     def __init__(self, wires, ansatz, init_params, device, shots, logging_obj):
         QuantumVariationalKernel.__init__(self, wires, ansatz, init_params, device, shots, logging_obj)
+        self.wires = self.device.wires.tolist()
 
     def kernel_circuit(self, x1, x2, params):
-        self.ansatz.ansatz(x1, params)
-        self.ansatz.adjoint_ansatz(x2, params)
-        return qml.probs(wires=self.device.wires.tolist())
+        self.ansatz.ansatz(x1, params, self.wires)
+        self.ansatz.adjoint_ansatz(x2, params, self.wires)
+        return qml.probs(wires=self.wires)
 
 class SwapQuantumVariationalKernel(QuantumVariationalKernel):
     def __init__(self, wires, ansatz, init_params, device, shots, logging_obj):
