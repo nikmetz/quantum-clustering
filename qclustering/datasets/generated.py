@@ -19,9 +19,9 @@ def generate(dataset, **dataset_params) -> DataSet:
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
 
-    x_train, y_train = minmax_scale(x[:train_size], (0, 2 * np.pi)), y[:train_size]
-    x_val, y_val = minmax_scale(x[train_size:train_size+val_size], (0, 2 * np.pi)), y[train_size:train_size+val_size]
-    x_test, y_test = minmax_scale(x[train_size+val_size:train_size+val_size+test_size], (0, 2 * np.pi)), y[train_size+val_size:train_size+val_size+test_size]
+    x_train, y_train = x[:train_size], y[:train_size]
+    x_val, y_val = x[train_size:train_size+val_size], y[train_size:train_size+val_size]
+    x_test, y_test = x[train_size+val_size:train_size+val_size+test_size], y[train_size+val_size:train_size+val_size+test_size]
 
     return DataSet(x_train, y_train, x_val, y_val, x_test, y_test)
 
