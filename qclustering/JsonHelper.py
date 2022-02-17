@@ -4,7 +4,6 @@ import shutil
 import qclustering.datasets
 import time
 import datetime
-import multiprocessing
 from qclustering.QuantumVariationalKernel import OverlapQuantumVariationalKernel, SwapQuantumVariationalKernel
 from qclustering.utils import get_params
 from pennylane import numpy as np
