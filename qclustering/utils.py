@@ -6,8 +6,8 @@ from sklearn.manifold import MDS
 def __kernel_help(i, j, x, y, kernel):
     return (i, j, kernel(x, y))
 
-def parallel_square_kernel_matrix(X, kernel, assume_normalized_kernel=False, pool=None):
-    if pool is None:
+def parallel_square_kernel_matrix(X, kernel, assume_normalized_kernel=False, process_count=1):
+    if process_count < 2:
         return qml.kernels.square_kernel_matrix(X, kernel)
 
     N = len(X)
@@ -20,15 +20,15 @@ def parallel_square_kernel_matrix(X, kernel, assume_normalized_kernel=False, poo
             else:
                 jobs.append((i, j, X[i], X[j], kernel))
 
-    results = pool.starmap(__kernel_help, jobs)
+    #results = pool.starmap(__kernel_help, jobs)
     for x in results:
         matrix[N * x[0] + x[1]] = x[2]
         matrix[N * x[1] + x[0]] = x[2]
 
     return np.array(matrix).reshape((N, N))
 
-def parallel_kernel_matrix(X1, X2, kernel, pool=None):
-    if pool is None:
+def parallel_kernel_matrix(X1, X2, kernel, process_count=1):
+    if process_count < 2:
         return qml.kernels.kernel_matrix(X1, X2, kernel)
         
     N = len(X1)
@@ -38,7 +38,7 @@ def parallel_kernel_matrix(X1, X2, kernel, pool=None):
     for i in range(N):
         for j in range(M):
             matrix[M * i + j] = (X1[i], X2[j])
-    matrix = pool.starmap(kernel, matrix)
+    #matrix = pool.starmap(kernel, matrix)
 
     return np.array(matrix).reshape((N, M))
 
@@ -69,6 +69,16 @@ def visualize(X, true_labels, labels):
     for idx, val in enumerate(clusters):
         a = ax.scatter(xs[true_labels == val], ys[true_labels == val], marker=mark[idx], c=colors[labels[true_labels == val]])
     plt.show()
+
+def visualize_cluster(X, labels, path):
+    xs, ys = np.split(X, 2, axis=1)
+    xs = np.reshape(xs, (xs.shape[0]))
+    ys = np.reshape(ys, (ys.shape[0]))
+
+    fig, ax = plt.subplots()
+    a = ax.scatter(xs, ys, c=labels)
+    fig.savefig(path)
+    return
 
 def simple_plot(xs, ys, xlabel, ylabel, filename, ylimit=None):
     fig, ax = plt.subplots()

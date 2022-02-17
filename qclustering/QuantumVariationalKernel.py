@@ -46,6 +46,7 @@ class QuantumVariationalKernel():
 
         if self.logging_obj is not None:
             self.logging_obj.log_testing(0, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)
+            self.logging_obj.log_weights(0, self.params)
 
         for epoch in range(epochs):
             lrate = learning_rate * (1 / (1+learning_rate_decay*epoch))
@@ -76,8 +77,9 @@ class QuantumVariationalKernel():
                 cost_val = cost_func(val_X, val_Y, self.params)
                 print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
                 if self.logging_obj is not None:
-                    self.logging_obj.log_training(epoch*batches+idx, c)
-                    self.logging_obj.log_validation(epoch*batches+idx, cost_val)
+                    self.logging_obj.log_train_cost(epoch*batches+idx, c)
+                    self.logging_obj.log_val_cost(epoch*batches+idx, cost_val)
+                    self.logging_obj.log_weights(epoch*batches+idx, self.params)
 
             if self.logging_obj is not None:
                 self.logging_obj.log_testing(epoch+1, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)

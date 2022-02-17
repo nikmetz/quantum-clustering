@@ -40,13 +40,6 @@ def run_json_config(js, path=""):
 
     ansatz = get_ansatz(ansatz_name, layers, ansatz_params)
 
-    num_processes = js.get("num_processes", 1)
-
-    if num_processes > 1:
-        pool = multiprocessing.Pool(processes=num_processes)
-    else:
-        pool = None
-
     dataset_params = js.get("dataset_params", {})
 
     data = qclustering.datasets.load_data(
@@ -62,10 +55,11 @@ def run_json_config(js, path=""):
         data = DataSet(train_data, train_target, data.validation_data, data.validation_target, data.test_data, data.test_target)
 
     logging_obj = Logging(
+        data = data,
         testing_interval = js.get("clustering_interval", 100),
         testing_algorithms = js.get("clustering_algorithm", ["kmeans"]),
         testing_algorithm_params = js.get("clustering_algorithm_params", [{}]),
-        process_pool = pool,
+        process_count = js.get("num_processes", 1),
         path = path
     )
     if circuit == "overlap":
