@@ -44,9 +44,12 @@ def run_json_config(js, path=""):
     data = qclustering.datasets.load_data(
         dataset = js.get("dataset"),
         two_classes = dataset_params.pop("two_classes", False),
-        scale = dataset_params.pop("scale", 0),
+        scale_factors = dataset_params.pop("scale_factors", []),
+        scale_pi = dataset_params.pop("scale_pi", False),
         dataset_params = dataset_params
     )
+
+    print(data.train_data)
 
     if "train_data" in js and "train_target" in js:
         train_data = np.array(js.get("train_data"))

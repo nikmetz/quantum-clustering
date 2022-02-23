@@ -10,7 +10,8 @@ from pennylane import numpy as np
 def load_data(
     dataset: str,
     two_classes = False,
-    scale = 0,
+    scale_factors = [],
+    scale_pi = False,
     dataset_params = {}
 ) -> DataSet:
     """
@@ -44,10 +45,13 @@ def load_data(
         val = np.array([1 if x == data.train_target[0] else -1 for x in data.validation_target])
         data = DataSet(data.train_data, train, data.validation_data, val, data.test_data, test)
 
-    if scale > 0:
-        train = minmax_scale(data.train_data, (0, scale * np.pi))
-        test = minmax_scale(data.test_data, (0, scale * np.pi))
-        val = minmax_scale(data.validation_data, (0, scale * np.pi))
+    if len(scale_factors) == 2:
+        scale = np.array(scale_factors)
+        if scale_pi:
+            scale = np.pi * scale
+        train = minmax_scale(data.train_data, scale)
+        test = minmax_scale(data.test_data, scale)
+        val = minmax_scale(data.validation_data, scale)
         data = DataSet(train, data.train_target, val, data.validation_target, test, data.test_target)
 
     return data
