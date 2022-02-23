@@ -56,9 +56,10 @@ def run_json_config(js, path=""):
 
     logging_obj = Logging(
         data = data,
-        testing_interval = js.get("clustering_interval", 100),
-        testing_algorithms = js.get("clustering_algorithm", ["kmeans"]),
-        testing_algorithm_params = js.get("clustering_algorithm_params", [{}]),
+        test_clustering_interval = js.get("test_clustering_interval", 100),
+        train_clustering_interval= js.get("train_clustering_interval", 100),
+        testing_algorithms = js.get("testing_algorithms", ["kmeans"]),
+        testing_algorithm_params = js.get("testing_algorithm_params", [{}]),
         process_count = js.get("num_processes", 1),
         path = path
     )

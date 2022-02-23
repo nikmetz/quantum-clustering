@@ -45,7 +45,8 @@ class QuantumVariationalKernel():
         n_clusters = np.unique(train_Y).shape[0]
 
         if self.logging_obj is not None:
-            self.logging_obj.log_testing(0, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)
+            self.logging_obj.log_train_clustering(0, self.kernel, n_clusters, train_X, train_Y)
+            self.logging_obj.log_test_clustering(0, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)
             self.logging_obj.log_weights(0, self.params)
 
         for epoch in range(epochs):
@@ -82,7 +83,8 @@ class QuantumVariationalKernel():
                     self.logging_obj.log_weights(epoch*batches+idx, self.params)
 
             if self.logging_obj is not None:
-                self.logging_obj.log_testing(epoch+1, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)
+                self.logging_obj.log_train_clustering(epoch+1, self.kernel, n_clusters, train_X, train_Y)
+                self.logging_obj.log_test_clustering(epoch+1, self.kernel, n_clusters, test_X, test_Y, train_X, train_Y)
 
         if self.logging_obj is not None:
             self.logging_obj.finish()

@@ -54,8 +54,9 @@ def get_cluster_result(algorithm, X, labels_true, labels_pred) -> ClusterResult:
 
 class Logging:
 
-    def __init__(self, data, testing_interval, testing_algorithms, testing_algorithm_params, process_count, path):
-        self.testing_interval = testing_interval
+    def __init__(self, data, test_clustering_interval, train_clustering_interval, testing_algorithms, testing_algorithm_params, process_count, path):
+        self.test_clustering_interval = test_clustering_interval
+        self.train_clustering_interval = train_clustering_interval
         self.testing_algorithms = testing_algorithms
         self.testing_algorithm_params = testing_algorithm_params
         self.process_count = process_count
@@ -68,10 +69,13 @@ class Logging:
         self.val_cost = {}
         self.test_clustering = {}
         self.test_kernel_matrix = {}
+        self.train_clustering = {}
+        self.train_kernel_matrix = {}
 
     def prepare_folders(self):
         for x in self.testing_algorithms:
-            Path(self.path, x).mkdir(parents=True, exist_ok=True)
+            Path(self.path, "test-clustering", x).mkdir(parents=True, exist_ok=True)
+            Path(self.path, "train-clustering", x).mkdir(parents=True, exist_ok=True)
 
     def log_train_cost(self, step: int, cost: float):
         self.train_cost[step] = cost
@@ -81,25 +85,32 @@ class Logging:
 
     def log_weights(self, step: int, weights):
         self.weights[step] = weights
+    
+    def log_train_clustering(self, epoch, kernel, n_clusters, train_X, train_Y):
+        if epoch % self.train_clustering_interval == 0:
+            self.clustering_eval(epoch, kernel, n_clusters, self.train_clustering, self.train_kernel_matrix, train_X, train_Y, train_X=train_X, train_Y=train_Y)
 
-    def log_testing(self, epoch, kernel, n_clusters, test_X, test_Y, train_X=None, train_Y=None):
-        if epoch % self.testing_interval == 0:
-            X_kernel = parallel_square_kernel_matrix(test_X, kernel, process_count=self.process_count)
-            self.test_kernel_matrix[epoch] = X_kernel
+    def log_test_clustering(self, epoch, kernel, n_clusters, test_X, test_Y, train_X=None, train_Y=None):
+        if epoch % self.test_clustering_interval == 0:
+            self.clustering_eval(epoch, kernel, n_clusters, self.test_clustering, self.test_kernel_matrix, test_X, test_Y, train_X=train_X, train_Y=train_Y)
 
-            for idx, alg in enumerate(self.testing_algorithms):
-                if alg == "svm":
-                    train_X_kernel = parallel_square_kernel_matrix(train_X, kernel, process_count=self.process_count)
-                    train_test_X_kernel = parallel_kernel_matrix(test_X, train_X, kernel, process_count=self.process_count)
-                    labels = classification(train_X_kernel, train_Y, train_test_X_kernel, "precomputed", self.testing_algorithm_params[idx])
+    def clustering_eval(self, epoch, kernel, n_clusters, clustering_data, kernel_data, X, Y, train_X=None, train_Y=None):
+        X_kernel = parallel_square_kernel_matrix(X, kernel, process_count=self.process_count)
+        kernel_data[epoch] = X_kernel
 
-                else:
-                    labels = clustering(alg, self.testing_algorithm_params[idx], "precomputed", n_clusters, X_kernel)
-                result = get_cluster_result(alg, test_X, test_Y, labels)
+        for idx, alg in enumerate(self.testing_algorithms):
+            if alg == "svm":
+                train_X_kernel = parallel_square_kernel_matrix(train_X, kernel, process_count=self.process_count)
+                train_test_X_kernel = parallel_kernel_matrix(X, train_X, kernel, process_count=self.process_count)
+                labels = classification(train_X_kernel, train_Y, train_test_X_kernel, "precomputed", self.testing_algorithm_params[idx])
 
-                if not alg in self.test_clustering:
-                    self.test_clustering[alg] = {}
-                self.test_clustering[alg][epoch] = result
+            else:
+                labels = clustering(alg, self.testing_algorithm_params[idx], "precomputed", n_clusters, X_kernel)
+            result = get_cluster_result(alg, X, Y, labels)
+
+            if not alg in clustering_data:
+                clustering_data[alg] = {}
+            clustering_data[alg][epoch] = result
 
     def finish(self):
         pickle_data = {
@@ -108,7 +119,9 @@ class Logging:
             "train_cost": self.train_cost,
             "val_cost": self.val_cost,
             "test_clustering": self.test_clustering,
-            "test_kernel_matrix": self.test_kernel_matrix
+            "test_kernel_matrix": self.test_kernel_matrix,
+            "train_clustering": self.train_clustering,
+            "train_kernel_matrix": self.train_kernel_matrix
         }
         pickle.dump(pickle_data, open(Path(self.path, "logging.p"), "wb"))
 
@@ -118,7 +131,9 @@ class Logging:
         simple_plot(val_steps, [self.val_cost[x] for x in val_steps], "Steps", "Validation loss", Path(self.path, "val_loss.png"))
 
         for alg, result in self.test_clustering.items():
-            self.generate_cluster_imgs(Path(self.path, alg), result)
+            self.generate_cluster_imgs(Path(self.path, "test-clustering", alg), result)
+        for alg, result in self.train_clustering.items():
+            self.generate_cluster_imgs(Path(self.path, "train-clustering", alg), result)
 
 
     def generate_cluster_imgs(self, path, result):
