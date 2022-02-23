@@ -1,4 +1,5 @@
 import pennylane as qml
+import math
 from qclustering.CostFunctions import get_cost_func
 from pennylane import numpy as np
 
@@ -29,6 +30,7 @@ class QuantumVariationalKernel():
         self,
         data,
         batch_size = 5,
+        num_batches = None,
         epochs = 500,
         learning_rate = 0.2,
         learning_rate_decay = 0.0,
@@ -43,6 +45,9 @@ class QuantumVariationalKernel():
         test_X, test_Y = data.test_data, data.test_target
 
         n_clusters = np.unique(train_Y).shape[0]
+
+        if num_batches is not None:
+            batch_size = int(train_X.shape[0] / num_batches)
 
         if self.logging_obj is not None:
             self.logging_obj.log_train_clustering(0, self.kernel, n_clusters, train_X, train_Y)
@@ -68,19 +73,19 @@ class QuantumVariationalKernel():
 
             #TODO: is using a random partition here a good idea?
             perm = np.random.permutation(train_X.shape[0])
-            batches = int(train_X.shape[0]/batch_size)
-            parts = [perm[i::batches] for i in range(batches)]
+            parts = [perm[i:i+batch_size] for i in range(0, len(perm), batch_size)]
 
             for idx, subset in enumerate(parts):
                 cost_func = get_cost_func(cost_func_name, cost_func_params, self, n_clusters)
 
                 self.params, c = opt.step_and_cost(lambda _params: cost_func(train_X[subset], train_Y[subset], _params), self.params)
                 cost_val = cost_func(val_X, val_Y, self.params)
-                print("Step: {}, cost: {}, val_cost: {}".format(epoch*batches+idx, c, cost_val))
+                step_num = epoch * len(parts) + idx
+                print("Step: {}, cost: {}, val_cost: {}".format(step_num, c, cost_val))
                 if self.logging_obj is not None:
-                    self.logging_obj.log_train_cost(epoch*batches+idx, c)
-                    self.logging_obj.log_val_cost(epoch*batches+idx, cost_val)
-                    self.logging_obj.log_weights(epoch*batches+idx, self.params)
+                    self.logging_obj.log_train_cost(epoch*step_num+idx, c)
+                    self.logging_obj.log_val_cost(epoch*step_num+idx, cost_val)
+                    self.logging_obj.log_weights(epoch*step_num+idx, self.params)
 
             if self.logging_obj is not None:
                 self.logging_obj.log_train_clustering(epoch+1, self.kernel, n_clusters, train_X, train_Y)

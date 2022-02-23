@@ -73,6 +73,7 @@ def run_json_config(js, path=""):
     qvk.train(
         data = data,
         batch_size = js.get("batch_size", 5),
+        num_batches = js.get("num_batches", None),
         epochs = js.get("epochs", 500),
         learning_rate = js.get("learning_rate", 0.2),
         learning_rate_decay = js.get("learning_rate_decay", 0.0),
