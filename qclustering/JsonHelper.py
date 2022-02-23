@@ -49,8 +49,6 @@ def run_json_config(js, path=""):
         dataset_params = dataset_params
     )
 
-    print(data.train_data)
-
     if "train_data" in js and "train_target" in js:
         train_data = np.array(js.get("train_data"))
         train_target = np.array(js.get("train_target"))

@@ -3,6 +3,8 @@ import pennylane as qml
 from qclustering.Clustering import clustering
 from itertools import permutations
 import copy
+from sklearn import metrics
+from qclustering.Clustering import clustering
 
 def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
     if cost_func_name == "KTA-supervised":
@@ -19,6 +21,12 @@ def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
         return lambda X, Y, params: triplet_loss(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
     elif cost_func_name == "triplet-loss-unsupervised":
         pass
+    elif cost_func_name == "rand-score":
+        return lambda X, Y, params: -metrics.rand_score(Y, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
+    elif cost_func_name == "adjusted-rand-score":
+        return lambda X, Y, params: -metrics.adjusted_rand_score(Y, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
+    elif cost_func_name == "davies_bouldin":
+        return lambda X, Y, params: -metrics.davies_bouldin_score(X, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
     else:
         raise ValueError(f"Unknown cost function: {cost_func_name}")
     pass
