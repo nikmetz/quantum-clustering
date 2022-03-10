@@ -27,6 +27,8 @@ def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
         return lambda X, Y, params: -metrics.adjusted_rand_score(Y, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
     elif cost_func_name == "davies_bouldin":
         return lambda X, Y, params: -metrics.davies_bouldin_score(X, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
+    elif cost_func_name == "calinski_harabasz":
+        return lambda X, Y, params: -metrics.calinski_harabasz_score(X, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
     else:
         raise ValueError(f"Unknown cost function: {cost_func_name}")
     pass
