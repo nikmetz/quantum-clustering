@@ -11,9 +11,9 @@ def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
         return lambda X, Y, params: -multiclass_target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, **cost_func_params)
     elif cost_func_name == "original-KTA-supervised":
         return lambda X, Y, params: -qml.kernels.target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
-    elif cost_func_name == "hilbert_schmidt":
+    elif cost_func_name == "hilbert-schmidt":
         return lambda X, Y, params: hilbert_schmidt(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params))
-    elif cost_func_name == "clustering_risk":
+    elif cost_func_name == "clustering-risk":
         return lambda X, Y, params: clustering_risk(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
     elif cost_func_name == "KTA-unsupervised":
         pass
@@ -25,13 +25,20 @@ def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
         return lambda X, Y, params: -metrics.rand_score(Y, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
     elif cost_func_name == "adjusted-rand-score":
         return lambda X, Y, params: -metrics.adjusted_rand_score(Y, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
-    elif cost_func_name == "davies_bouldin":
-        return lambda X, Y, params: -metrics.davies_bouldin_score(X, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
-    elif cost_func_name == "calinski_harabasz":
-        return lambda X, Y, params: -metrics.calinski_harabasz_score(X, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
+    elif cost_func_name == "davies-bouldin":
+        return lambda X, Y, params: -metric_cost_func(metrics.davies_bouldin_score, X, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
+    elif cost_func_name == "calinski-harabasz":
+        return lambda X, Y, params: -metric_cost_func(metrics.calinski_harabasz_score, X, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
     else:
         raise ValueError(f"Unknown cost function: {cost_func_name}")
     pass
+
+def metric_cost_func(metric_func, X, kernel, n_clusters):
+    labels = clustering("kmeans", {}, kernel, n_clusters, X)
+    if len(np.unique(labels)) != n_clusters:
+        return 0
+    else:
+        return metric_func(X, labels)
 
 def centered_kernel_mat(kernel_mat):
     n_samples = kernel_mat.shape[0]
