@@ -123,7 +123,7 @@ class SwapQuantumVariationalKernel(QuantumVariationalKernel):
             qml.CSWAP(wires=[0, x, y])
         qml.Hadamard(wires=0)
 
-        return qml.expval(qml.PauliZ(0))
+        return qml.probs(wires=[0])
 
     def kernel_with_params(self, x1, x2, params):
-        return self.qnode(x1, x2, params)
+        return 1 - 2 * self.qnode(x1, x2, params)[1]
