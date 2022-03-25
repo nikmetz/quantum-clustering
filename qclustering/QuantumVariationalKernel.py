@@ -108,8 +108,11 @@ class OverlapQuantumVariationalKernel(QuantumVariationalKernel):
         return self.qnode(x1, x2, params)[0]
 
 class SwapQuantumVariationalKernel(QuantumVariationalKernel):
-    def __init__(self, wires, ansatz, init_params, device, shots, logging_obj):
-        self.device = qml.device(device, wires=2*wires+1, shots=shots)
+    def __init__(self, wires, ansatz, init_params, device, shots, noise_model, logging_obj):
+        if device == "qiskit.aer":
+            self.device = qml.device(device, wires=2*wires+1, shots=shots, noise_model=noise_model)
+        else:
+            self.device = qml.device(device, wires=2*wires+1, shots=shots)
         QuantumVariationalKernel.__init__(self, ansatz, init_params, self.device, logging_obj)
         self.first_wires = self.wires[1:1+wires]
         self.second_wires = self.wires[1+wires:]

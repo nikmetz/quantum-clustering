@@ -1,4 +1,5 @@
-import autograd.numpy as np
+#import autograd.numpy as np
+from pennylane import numpy as np
 import matplotlib.pyplot as plt
 import pennylane as qml
 from sklearn.manifold import MDS

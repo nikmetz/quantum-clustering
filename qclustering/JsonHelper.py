@@ -4,6 +4,8 @@ import shutil
 import qclustering.datasets
 import time
 import datetime
+import pickle
+from pathlib import Path
 from qclustering.QuantumVariationalKernel import OverlapQuantumVariationalKernel, SwapQuantumVariationalKernel
 from qclustering.utils import get_params
 from pennylane import numpy as np
@@ -66,7 +68,15 @@ def run_json_config(js, path=""):
     if circuit == "overlap":
         qvk = OverlapQuantumVariationalKernel(wires, ansatz, init_params, device, shots, logging_obj)
     elif circuit == "swap":
-        qvk = SwapQuantumVariationalKernel(wires, ansatz, init_params, device, shots, logging_obj)
+        noise_name = js.get("noise_model", None)
+        if noise_name is not None:
+            noise_models_list = pickle.load(open(Path("qclustering/ibmq_noise_models.p"), "rb"))
+            if not noise_name in noise_models_list:
+                raise ValueError(f"Unknown noise model: {noise_name}")
+            noise_model = noise_models_list[noise_name]
+        else:
+            noise_model = None
+        qvk = SwapQuantumVariationalKernel(wires, ansatz, init_params, device, shots, noise_model, logging_obj)
     else:
         raise ValueError(f"Unknown circuit name: {circuit}")
 
