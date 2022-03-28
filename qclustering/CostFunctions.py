@@ -5,6 +5,7 @@ from itertools import permutations
 import copy
 from sklearn import metrics
 from qclustering.Clustering import clustering
+from qclustering.KernelMatrix import square_postprocessing
 
 def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
     if cost_func_name == "KTA-supervised":
@@ -51,6 +52,7 @@ def multiclass_target_alignment(X, Y, kernel, num_classes, assume_normalized_ker
         kernel,
         assume_normalized_kernel=assume_normalized_kernel,
     )
+    K = square_postprocessing(K)
     num_samples = Y.shape[0]
 
     T = None
@@ -91,7 +93,8 @@ def triplet_loss(X, labels, kernel, strategy="random", alpha=1):
     sum = 0.0
     if strategy == "minmax":
         #only needed for minmax strategy, not random
-        K = 1 - qml.kernels.square_kernel_matrix(X, kernel, assume_normalized_kernel=False)
+        K = qml.kernels.square_kernel_matrix(X, kernel, assume_normalized_kernel=False)
+        K = 1 - square_postprocessing(K)
 
     for anchor_idx, anchor in enumerate(X):
         

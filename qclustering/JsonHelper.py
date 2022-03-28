@@ -12,6 +12,7 @@ from pennylane import numpy as np
 from qclustering.Ansatz import get_ansatz
 from qclustering.Logging import Logging
 from qclustering.datasets.utils import DataSet
+from qclustering.KernelMatrix import set_postprocessing_parameters, set_processing_pool
 
 def run_json_file(file):
     with open(file) as f:
@@ -34,6 +35,7 @@ def run_json_config(js, path=""):
     device = js.get("device", "default.qubit")
     shots = js.get("shots", None)
     numpy_seed = js.get("numpy_seed", 1546)
+    num_processes = js.get("num_processes", 1)
 
     np.random.seed(numpy_seed)
 
@@ -42,6 +44,11 @@ def run_json_config(js, path=""):
     ansatz = get_ansatz(ansatz_name, layers, ansatz_params)
 
     dataset_params = js.get("dataset_params", {})
+
+    set_postprocessing_parameters(js.get("postprocessing_functions", []), js.get("postprocessing_parameters", []))
+
+    if num_processes > 1:
+        set_processing_pool(num_processes)
 
     data = qclustering.datasets.load_data(
         dataset = js.get("dataset"),
@@ -62,7 +69,6 @@ def run_json_config(js, path=""):
         train_clustering_interval= js.get("train_clustering_interval", 100),
         testing_algorithms = js.get("testing_algorithms", ["kmeans"]),
         testing_algorithm_params = js.get("testing_algorithm_params", [{}]),
-        process_count = js.get("num_processes", 1),
         path = path
     )
     if circuit == "overlap":

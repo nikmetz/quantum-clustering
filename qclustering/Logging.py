@@ -5,7 +5,7 @@ from pennylane import numpy as np
 from itertools import permutations
 from pathlib import Path
 from qclustering.Clustering import clustering, classification
-from qclustering.utils import parallel_kernel_matrix, parallel_square_kernel_matrix
+from qclustering.KernelMatrix import parallel_kernel_matrix, parallel_square_kernel_matrix, square_postprocessing
 import copy
 import pickle
 
@@ -54,12 +54,11 @@ def get_cluster_result(algorithm, X, labels_true, labels_pred) -> ClusterResult:
 
 class Logging:
 
-    def __init__(self, data, test_clustering_interval, train_clustering_interval, testing_algorithms, testing_algorithm_params, process_count, path):
+    def __init__(self, data, test_clustering_interval, train_clustering_interval, testing_algorithms, testing_algorithm_params, path):
         self.test_clustering_interval = test_clustering_interval
         self.train_clustering_interval = train_clustering_interval
         self.testing_algorithms = testing_algorithms
         self.testing_algorithm_params = testing_algorithm_params
-        self.process_count = process_count
         self.path = path
         self.prepare_folders()
 
@@ -95,13 +94,15 @@ class Logging:
             self.clustering_eval(epoch, kernel, n_clusters, self.test_clustering, self.test_kernel_matrix, test_X, test_Y, train_X=train_X, train_Y=train_Y)
 
     def clustering_eval(self, epoch, kernel, n_clusters, clustering_data, kernel_data, X, Y, train_X=None, train_Y=None):
-        X_kernel = parallel_square_kernel_matrix(X, kernel, process_count=self.process_count)
+        X_kernel = parallel_square_kernel_matrix(X, kernel)
+        X_kernel = square_postprocessing(X_kernel)
         kernel_data[epoch] = X_kernel
 
         for idx, alg in enumerate(self.testing_algorithms):
             if alg == "svm":
-                train_X_kernel = parallel_square_kernel_matrix(train_X, kernel, process_count=self.process_count)
-                train_test_X_kernel = parallel_kernel_matrix(X, train_X, kernel, process_count=self.process_count)
+                train_X_kernel = parallel_square_kernel_matrix(train_X, kernel)
+                train_X_kernel = square_postprocessing(train_X_kernel)
+                train_test_X_kernel = parallel_kernel_matrix(X, train_X, kernel)
                 labels = classification(train_X_kernel, train_Y, train_test_X_kernel, "precomputed", self.testing_algorithm_params[idx])
 
             else:
