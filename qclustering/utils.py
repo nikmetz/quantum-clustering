@@ -42,7 +42,7 @@ def build_noise_model(noise_model_params, num_qubits):
                 error = noise.amplitude_damping_error(parameter)
                 gates = ['x', 'y', 'z', 'h'] if gates is None else gates
             elif name == "depolarizing":
-                error = noise.depolarizing_error(parameter, num_qubits)
+                error = noise.depolarizing_error(parameter, 1)
                 gates = ['x', 'y', 'z', 'h'] if gates is None else gates
             else:
                 raise ValueError(f"Unknown noise name: {name}")
