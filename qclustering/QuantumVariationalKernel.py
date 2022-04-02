@@ -1,6 +1,7 @@
+from distutils.command.build import build
 import pennylane as qml
-import math
 from qclustering.CostFunctions import get_cost_func
+from qclustering.utils import build_noise_model
 from pennylane import numpy as np
 
 class QuantumVariationalKernel():
@@ -110,7 +111,8 @@ class OverlapQuantumVariationalKernel(QuantumVariationalKernel):
 class SwapQuantumVariationalKernel(QuantumVariationalKernel):
     def __init__(self, wires, ansatz, init_params, device, shots, noise_model, logging_obj):
         if device == "qiskit.aer":
-            self.device = qml.device(device, wires=2*wires+1, shots=shots, noise_model=noise_model)
+            noise = build_noise_model(noise_model, 2*wires+1)
+            self.device = qml.device(device, wires=2*wires+1, shots=shots, noise_model=noise)
         else:
             self.device = qml.device(device, wires=2*wires+1, shots=shots)
         QuantumVariationalKernel.__init__(self, ansatz, init_params, self.device, logging_obj)

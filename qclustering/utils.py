@@ -1,6 +1,57 @@
 from pennylane import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.manifold import MDS
+from pathlib import Path
+import qiskit.providers.aer.noise as noise
+import pickle
+import pennylane as qml
+
+def build_noise_model(noise_model_params, num_qubits):
+    if noise_model_params is None:
+        return None
+    
+    if type(noise_model_params) is str:
+        noise_models_list = pickle.load(open(Path("qclustering/ibmq_noise_models.p"), "rb"))
+        if not noise_model_params in noise_models_list:
+            raise ValueError(f"Unknown noise model: {noise_model_params}")
+        return noise_models_list[noise_model_params]
+
+    elif type(noise_model_params) is list:
+        noise_model = noise.NoiseModel()
+        for noise_instance in noise_model_params:
+            name = noise_instance["name"]
+            parameter = noise_instance.get("parameter", None)
+            gates = noise_instance.get("gates", None)
+
+            if name == "coherent-x":
+                error = noise.coherent_unitary_error(qml.matrix(qml.RX(parameter * 2*np.pi, wires=0)))
+                gates = ['x'] if gates is None else gates
+            elif name == "coherent-y":
+                error = noise.coherent_unitary_error(qml.matrix(qml.RY(parameter * 2*np.pi, wires=0)))
+                gates = ['y'] if gates is None else gates
+            elif name == "coherent-z":
+                error = noise.coherent_unitary_error(qml.matrix(qml.RZ(parameter * 2*np.pi, wires=0)))
+                gates = ['z'] if gates is None else gates
+            elif name == "bit-flip":
+                error = noise.pauli_error([('X', parameter), ('I', 1-parameter)])
+                gates = ['x', 'y', 'z', 'h'] if gates is None else gates
+            elif name == "phase-damp":
+                error = noise.phase_damping_error(parameter)
+                gates = ['x', 'y', 'z', 'h'] if gates is None else gates
+            elif name == "amplitude-damp":
+                error = noise.amplitude_damping_error(parameter)
+                gates = ['x', 'y', 'z', 'h'] if gates is None else gates
+            elif name == "depolarizing":
+                error = noise.depolarizing_error(parameter, num_qubits)
+                gates = ['x', 'y', 'z', 'h'] if gates is None else gates
+            else:
+                raise ValueError(f"Unknown noise name: {name}")
+
+            noise_model.add_all_qubit_quantum_error(error, gates)
+
+        return noise_model
+
+    return None
 
 def get_params(strategy="random", **params):
     if strategy == "random":
