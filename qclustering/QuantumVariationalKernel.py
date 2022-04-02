@@ -112,7 +112,16 @@ class SwapQuantumVariationalKernel(QuantumVariationalKernel):
     def __init__(self, wires, ansatz, init_params, device, shots, noise_model, logging_obj):
         if device == "qiskit.aer":
             noise = build_noise_model(noise_model, 2*wires+1)
-            self.device = qml.device(device, wires=2*wires+1, shots=shots, noise_model=noise)
+            self.device = qml.device(
+                device,
+                wires=2*wires+1,
+                shots=shots,
+                noise_model=noise,
+                max_parallel_threads=0,
+                max_parallel_experiments=1,
+                max_parallel_shots=0,
+                max_memory_mb=2*1024
+            )
         else:
             self.device = qml.device(device, wires=2*wires+1, shots=shots)
         QuantumVariationalKernel.__init__(self, ansatz, init_params, self.device, logging_obj)
