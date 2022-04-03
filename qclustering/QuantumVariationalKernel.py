@@ -117,9 +117,9 @@ class SwapQuantumVariationalKernel(QuantumVariationalKernel):
                 wires=2*wires+1,
                 shots=shots,
                 noise_model=noise,
-                max_parallel_threads=0,
+                max_parallel_threads=1,
                 max_parallel_experiments=1,
-                max_parallel_shots=0,
+                max_parallel_shots=1,
                 max_memory_mb=2*1024
             )
         else:
