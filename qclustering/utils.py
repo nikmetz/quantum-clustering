@@ -6,7 +6,33 @@ import qiskit.providers.aer.noise as noise
 import pickle
 import pennylane as qml
 
-def build_noise_model(noise_model_params, num_qubits):
+def apply_noise_model_qml(noise_model_params, wires):
+    if type(noise_model_params) is list:
+        for noise_instance in noise_model_params:
+            name = noise_instance.get("name")
+            parameter = noise_instance.get("parameter")
+
+            for wire in wires:
+                if name == "coherent-x":
+                    pass
+                elif name == "coherent-y":
+                    pass
+                elif name == "coherent-z":
+                    pass
+                elif name == "bit-flip":
+                    qml.BitFlip(parameter, wire)
+                elif name == "phase-damp":
+                    qml.PhaseDamping(parameter, wire)
+                elif name == "amplitude-damp":
+                    qml.AmplitudeDamping(parameter, wire)
+                elif name == "depolarizing":
+                    qml.DepolarizingChannel(parameter, wire)
+                else:
+                    raise ValueError(f"Unknown noise name: {name}")
+
+
+
+def build_noise_model_qiskit(noise_model_params, num_qubits):
     if noise_model_params is None:
         return None
     
@@ -25,25 +51,25 @@ def build_noise_model(noise_model_params, num_qubits):
 
             if name == "coherent-x":
                 error = noise.coherent_unitary_error(qml.matrix(qml.RX(parameter * 2*np.pi, wires=0)))
-                gates = ['x'] if gates is None else gates
+                gates = ['x', 'rx'] if gates is None else gates
             elif name == "coherent-y":
                 error = noise.coherent_unitary_error(qml.matrix(qml.RY(parameter * 2*np.pi, wires=0)))
-                gates = ['y'] if gates is None else gates
+                gates = ['y', 'ry'] if gates is None else gates
             elif name == "coherent-z":
                 error = noise.coherent_unitary_error(qml.matrix(qml.RZ(parameter * 2*np.pi, wires=0)))
-                gates = ['z'] if gates is None else gates
+                gates = ['z', 'rz'] if gates is None else gates
             elif name == "bit-flip":
                 error = noise.pauli_error([('X', parameter), ('I', 1-parameter)])
-                gates = ['x', 'y', 'z', 'h'] if gates is None else gates
+                gates = ['x', 'rx', 'y', 'ry', 'z', 'rz', 'h'] if gates is None else gates
             elif name == "phase-damp":
                 error = noise.phase_damping_error(parameter)
-                gates = ['x', 'y', 'z', 'h'] if gates is None else gates
+                gates = ['x', 'rx', 'y', 'ry', 'z', 'rz', 'h'] if gates is None else gates
             elif name == "amplitude-damp":
                 error = noise.amplitude_damping_error(parameter)
-                gates = ['x', 'y', 'z', 'h'] if gates is None else gates
+                gates = ['x', 'rx', 'y', 'ry', 'z', 'rz', 'h'] if gates is None else gates
             elif name == "depolarizing":
                 error = noise.depolarizing_error(parameter, 1)
-                gates = ['x', 'y', 'z', 'h'] if gates is None else gates
+                gates = ['x', 'rx', 'y', 'ry', 'z', 'rz', 'h'] if gates is None else gates
             else:
                 raise ValueError(f"Unknown noise name: {name}")
 

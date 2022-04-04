@@ -1,7 +1,7 @@
 from distutils.command.build import build
 import pennylane as qml
 from qclustering.CostFunctions import get_cost_func
-from qclustering.utils import build_noise_model
+from qclustering.utils import build_noise_model_qiskit, apply_noise_model_qml
 from pennylane import numpy as np
 
 class QuantumVariationalKernel():
@@ -110,18 +110,21 @@ class OverlapQuantumVariationalKernel(QuantumVariationalKernel):
 
 class SwapQuantumVariationalKernel(QuantumVariationalKernel):
     def __init__(self, wires, ansatz, init_params, device, shots, noise_model, logging_obj):
+        self.noise = None
         if device == "qiskit.aer":
-            noise = build_noise_model(noise_model, 2*wires+1)
             self.device = qml.device(
                 device,
                 wires=2*wires+1,
                 shots=shots,
-                noise_model=noise,
+                noise_model=build_noise_model_qiskit(noise_model, 2*wires+1),
                 max_parallel_threads=1,
                 max_parallel_experiments=1,
                 max_parallel_shots=1,
                 max_memory_mb=2*1024
             )
+        elif device == "default.mixed":
+            self.noise = noise_model
+            self.device = qml.device(device, wires=2*wires+1, shots=shots)
         else:
             self.device = qml.device(device, wires=2*wires+1, shots=shots)
         QuantumVariationalKernel.__init__(self, ansatz, init_params, self.device, logging_obj)
@@ -136,6 +139,9 @@ class SwapQuantumVariationalKernel(QuantumVariationalKernel):
         for x, y in zip(self.first_wires, self.second_wires):
             qml.CSWAP(wires=[0, x, y])
         qml.Hadamard(wires=0)
+
+        if self.noise is not None:
+            apply_noise_model_qml(self.noise, self.wires)
 
         return qml.probs(wires=[0])
 
