@@ -5,9 +5,11 @@ from sklearn.svm import SVC
 
 def clustering(algorithm, algorithm_params, kernel, n_clusters, X):
     if callable(kernel):
+        # kernel parameter is a function
         distance = lambda x1, x2: 1 - kernel(x1, x2)
         X_distance = X
     else:
+        # kernel parameter is "precomputed" and X is the kernel matrix
         distance = kernel
         X_distance = 1 - X
 
@@ -21,7 +23,7 @@ def clustering(algorithm, algorithm_params, kernel, n_clusters, X):
         spectral = SpectralClustering(n_clusters=n_clusters, affinity=kernel, **algorithm_params)
         return spectral.fit(X).labels_
     elif algorithm == "agglomerative":
-        agglomerative = AgglomerativeClustering(n_clusters=n_clusters, affinity=kernel, **algorithm_params)
+        agglomerative = AgglomerativeClustering(n_clusters=n_clusters, affinity=distance, **algorithm_params)
         return agglomerative.fit(X).labels_
     elif algorithm == "dbscan":
         dbscan = DBSCAN(metric=distance, **algorithm_params)
