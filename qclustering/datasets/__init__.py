@@ -1,6 +1,6 @@
 from qclustering.datasets.generated import generate
 from qclustering.datasets.generated import donuts
-from qclustering.datasets.iris import iris
+from qclustering.datasets.existing import load_existing
 from qclustering.datasets.mnist import mnist
 from qclustering.datasets.utils import DataSet
 from sklearn.preprocessing import minmax_scale
@@ -28,8 +28,8 @@ def load_data(
     :raises ValueError: Raised if a not supported dataset is requested
     """
 
-    if dataset == "iris":
-        data = iris(**dataset_params)
+    if dataset in ["iris", "wine", "breast-cancer"]:
+        data = load_existing(dataset=dataset, **dataset_params)
     elif dataset == "mnist":
         data = mnist(**dataset_params)
     elif dataset in ["circles", "moons", "classification", "blobs"]:
