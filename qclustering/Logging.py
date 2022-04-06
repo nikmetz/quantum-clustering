@@ -15,6 +15,7 @@ class ClusterResult(NamedTuple):
     adjusted_rand_score: float
     calinski_harabasz: float
     davies_bouldin: float
+    normalized_mutual_information: float
 
 def accuracy(true_labels, pred_labels):
     return 1 - np.count_nonzero(pred_labels - true_labels) / len(true_labels)
@@ -43,6 +44,7 @@ def get_cluster_result(algorithm, X, labels_true, labels_pred) -> ClusterResult:
     #    acc = cluster_accuracy(labels_true, labels_pred)
     rand_score = metrics.rand_score(labels_true, labels_pred)
     adjusted_rand_score = metrics.adjusted_rand_score(labels_true, labels_pred)
+    normalized_mutual_information = metrics.normalized_mutual_info_score(labels_true, labels_pred)
     if len(np.unique(labels_pred)) < 2:
         calinski_harabasz = 0
         davies_bouldin = 0
@@ -50,7 +52,7 @@ def get_cluster_result(algorithm, X, labels_true, labels_pred) -> ClusterResult:
         calinski_harabasz = metrics.calinski_harabasz_score(X, labels_pred)
         davies_bouldin = metrics.davies_bouldin_score(X, labels_pred)
 
-    return ClusterResult(labels_pred, rand_score, adjusted_rand_score, calinski_harabasz, davies_bouldin)
+    return ClusterResult(labels_pred, rand_score, adjusted_rand_score, calinski_harabasz, davies_bouldin, normalized_mutual_information)
 
 class Logging:
 
@@ -143,3 +145,4 @@ class Logging:
         simple_plot(clustering_steps, [result[x].adjusted_rand_score for x in clustering_steps], "Epoch", "Adjusted rand score", Path(path, "adjusted_rand_score.png"), [-1.1, 1.1])
         simple_plot(clustering_steps, [result[x].calinski_harabasz for x in clustering_steps], "Epoch", "Calinski harabasz", Path(path, "calinski_harabasz.png"))
         simple_plot(clustering_steps, [result[x].davies_bouldin for x in clustering_steps], "Epoch", "Davies bouldin", Path(path, "davies_bouldin.png"))
+        simple_plot(clustering_steps, [result[x].normalized_mutual_information for x in clustering_steps], "Epoch", "Noralized mutual information", Path(path, "normalized_mutual_information.png"))
