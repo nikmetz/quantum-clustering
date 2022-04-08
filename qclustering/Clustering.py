@@ -2,6 +2,7 @@ from qclustering.KernelKMeans import KernelKMeans
 from qclustering.OriginalKernelKMeans import OriginalKernelKMeans
 from sklearn.cluster import SpectralClustering, AgglomerativeClustering, DBSCAN, OPTICS
 from sklearn.svm import SVC
+from pennylane import numpy as np
 
 def clustering(algorithm, algorithm_params, kernel, n_clusters, X):
     if callable(kernel):
@@ -12,6 +13,7 @@ def clustering(algorithm, algorithm_params, kernel, n_clusters, X):
         # kernel parameter is "precomputed" and X is the kernel matrix
         distance = kernel
         X_distance = 1 - X
+        X_distance = X_distance.clip(min=0)
 
     if algorithm  == "kmeans":
         kmeans = KernelKMeans(n_clusters=n_clusters, kernel=kernel, **algorithm_params)

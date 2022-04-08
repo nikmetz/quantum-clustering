@@ -4,6 +4,7 @@ from qclustering.datasets.existing import load_existing
 from qclustering.datasets.mnist import mnist
 from qclustering.datasets.utils import DataSet
 from sklearn.preprocessing import minmax_scale
+from sklearn.decomposition import PCA
 from pennylane import numpy as np
 
 
@@ -12,6 +13,8 @@ def load_data(
     two_classes = False,
     scale_factors = [],
     scale_pi = False,
+    apply_pca = False,
+    num_features = 2,
     dataset_params = {}
 ) -> DataSet:
     """
@@ -44,6 +47,14 @@ def load_data(
         test = np.array([1 if x == data.train_target[0] else -1 for x in data.test_target])
         val = np.array([1 if x == data.train_target[0] else -1 for x in data.validation_target])
         data = DataSet(data.train_data, train, data.validation_data, val, data.test_data, test)
+
+    if apply_pca:
+        pca = PCA(n_components=num_features)
+        pca.fit(data.train_data)
+        train_data = pca.transform(data.train_data)
+        test_data = pca.transform(data.test_data)
+        val_data = pca.transform(data.validation_data)
+        data = DataSet(train_data, data.train_target, val_data, data.validation_target, test_data, data.test_target)
 
     if len(scale_factors) == 2:
         scale = np.array(scale_factors)

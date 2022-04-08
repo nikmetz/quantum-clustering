@@ -53,6 +53,8 @@ def run_json_config(js, path=""):
         two_classes = dataset_params.pop("two_classes", False),
         scale_factors = dataset_params.pop("scale_factors", []),
         scale_pi = dataset_params.pop("scale_pi", False),
+        apply_pca = dataset_params.pop("pca", False),
+        num_features = dataset_params.pop("num_features", 2),
         dataset_params = dataset_params
     )
 
