@@ -1,9 +1,12 @@
 import pennylane as qml
 from math import gcd
+from qclustering.NoiseExtension import NoiseExtension
 
 def get_ansatz(name, num_layers, params):
     if name == "ansatz1":
         return Ansatz1(num_layers)
+    elif name == "ansatz1noise":
+        return Ansatz1Noise(num_layers)
     elif name == "ansatz2":
         return Ansatz2(num_layers)
     elif name == "ansatz3":
@@ -12,8 +15,12 @@ def get_ansatz(name, num_layers, params):
     #    return Ansatz4(num_layers, **params)
 
 class Ansatz():
-    def __init__(self, num_layers):
+    def __init__(self, num_layers, noise=None):
         self.num_layers = num_layers
+        self.noise = None
+
+    def set_noise(self, noise):
+        self.noise = noise
 
     def ansatz(self, data, params, wires):
         pass
@@ -40,6 +47,26 @@ class Ansatz1(Ansatz):
             qml.RY(params[idx, 0], wires=[wire])
 
         qml.broadcast(unitary=qml.CRZ, pattern="ring", wires=wires, parameters=params[:, 1])
+
+class Ansatz1Noise(Ansatz):
+    def __init__(self, num_layers):
+        Ansatz.__init__(self, num_layers)
+
+    def ansatz(self, data, params, wires):
+        for j, layer_params in enumerate(params):
+            self.layer(data, layer_params, wires, i0=j * len(wires))
+
+    def layer(self, x, params, wires, i0=0, inc=1):
+        """Building block of the embedding ansatz"""
+        i = i0
+        for idx, wire in enumerate(wires):
+            NoiseExtension(self.noise).apply(wires=[wire], gate=qml.Hadamard)
+            NoiseExtension(self.noise).apply_parameterized(x[i % len(x)], wires=[wire], gate=qml.RZ)
+            i += inc
+            NoiseExtension(self.noise).apply_parameterized(params[idx, 0], wires=[wire], gate=qml.RY)
+
+        ne = NoiseExtension(self.noise, qml.CRZ)
+        qml.broadcast(unitary=ne.apply_parameterized, pattern="ring", wires=wires, parameters=params[:, 1])
 
 class Ansatz2(Ansatz):
     def __init__(self, num_layers):

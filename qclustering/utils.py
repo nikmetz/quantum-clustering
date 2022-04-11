@@ -5,30 +5,37 @@ from pathlib import Path
 import qiskit.providers.aer.noise as noise
 import pickle
 import pennylane as qml
+from typing import NamedTuple
 
-def apply_noise_model_qml(noise_model_params, wires):
+class NoiseModel(NamedTuple):
+    incoherent: list
+    coherent: dict
+
+def build_noise_model_qml(noise_model_params):
     if type(noise_model_params) is list:
+        incoherent = []
+        coherent = {"X":[], "Y":[], "Z":[]}
         for noise_instance in noise_model_params:
             name = noise_instance.get("name")
             parameter = noise_instance.get("parameter")
 
-            for wire in wires:
-                if name == "coherent-x":
-                    pass
-                elif name == "coherent-y":
-                    pass
-                elif name == "coherent-z":
-                    pass
-                elif name == "bit-flip":
-                    qml.BitFlip(parameter, wire)
-                elif name == "phase-damp":
-                    qml.PhaseDamping(parameter, wire)
-                elif name == "amplitude-damp":
-                    qml.AmplitudeDamping(parameter, wire)
-                elif name == "depolarizing":
-                    qml.DepolarizingChannel(parameter, wire)
-                else:
-                    raise ValueError(f"Unknown noise name: {name}")
+            if name == "coherent-x":
+                coherent["X"].append(lambda wires: qml.RX(parameter * 2*np.pi, wires=wires))
+            elif name == "coherent-y":
+                coherent["Y"].append(lambda wires: qml.RY(parameter * 2*np.pi, wires=wires))
+            elif name == "coherent-z":
+                coherent["Z"].append(lambda wires: qml.RZ(parameter * 2*np.pi, wires=wires))
+            elif name == "bit-flip":
+                incoherent.append(lambda wires:qml.BitFlip(parameter, wires=wires))
+            elif name == "phase-damp":
+                incoherent.append(lambda wires:qml.PhaseDamping(parameter, wires=wires))
+            elif name == "amplitude-damp":
+                incoherent.append(lambda wires:qml.AmplitudeDamping(parameter, wires=wires))
+            elif name == "depolarizing":
+                incoherent.append(lambda wires:qml.DepolarizingChannel(parameter, wires=wires))
+            else:
+                raise ValueError(f"Unknown noise name: {name}")
+        return NoiseModel(incoherent, coherent)
 
 
 

@@ -1,8 +1,9 @@
 from distutils.command.build import build
 import pennylane as qml
 from qclustering.CostFunctions import get_cost_func
-from qclustering.utils import build_noise_model_qiskit, apply_noise_model_qml
+from qclustering.utils import build_noise_model_qiskit, build_noise_model_qml
 from pennylane import numpy as np
+from qclustering.NoiseExtension import NoiseExtension
 
 class QuantumVariationalKernel():
     def __init__(self, ansatz, init_params, device, logging_obj = None):
@@ -123,7 +124,8 @@ class SwapQuantumVariationalKernel(QuantumVariationalKernel):
                 max_memory_mb=2*1024
             )
         elif device == "default.mixed":
-            self.noise = noise_model
+            self.noise = build_noise_model_qml(noise_model)
+            ansatz.set_noise(self.noise)
             self.device = qml.device(device, wires=2*wires+1, shots=shots)
         else:
             self.device = qml.device(device, wires=2*wires+1, shots=shots)
@@ -135,13 +137,10 @@ class SwapQuantumVariationalKernel(QuantumVariationalKernel):
         self.ansatz.ansatz(x1, params, self.first_wires)
         self.ansatz.ansatz(x2, params, self.second_wires)
 
-        qml.Hadamard(wires=0)
+        NoiseExtension(self.noise).apply(wires=[0], gate=qml.Hadamard)
         for x, y in zip(self.first_wires, self.second_wires):
-            qml.CSWAP(wires=[0, x, y])
-        qml.Hadamard(wires=0)
-
-        if self.noise is not None:
-            apply_noise_model_qml(self.noise, self.wires)
+            NoiseExtension(self.noise).apply(wires=[0, x, y], gate=qml.CSWAP)
+        NoiseExtension(self.noise).apply(wires=[0], gate=qml.Hadamard)
 
         return qml.probs(wires=[0])
 
