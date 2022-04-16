@@ -7,32 +7,68 @@ from sklearn import metrics
 from qclustering.Clustering import clustering
 from qclustering.KernelMatrix import square_postprocessing
 
-def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
+def get_cost_func(X, Y, cost_func_name, cost_func_params, kernel_obj, n_clusters):
     if cost_func_name == "KTA-supervised":
-        return lambda X, Y, params: -multiclass_target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, **cost_func_params)
+        return lambda params: -multiclass_target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, **cost_func_params)
     elif cost_func_name == "original-KTA-supervised":
-        return lambda X, Y, params: -qml.kernels.target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
+        return lambda params: -qml.kernels.target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
     elif cost_func_name == "hilbert-schmidt":
-        return lambda X, Y, params: hilbert_schmidt(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params))
+        return lambda params: hilbert_schmidt(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params))
     elif cost_func_name == "clustering-risk":
-        return lambda X, Y, params: clustering_risk(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
+        return lambda params: clustering_risk(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
     elif cost_func_name == "KTA-unsupervised":
         pass
     elif cost_func_name == "triplet-loss-supervised":
-        return lambda X, Y, params: triplet_loss(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
+        return lambda params: triplet_loss(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
     elif cost_func_name == "triplet-loss-unsupervised":
         pass
     elif cost_func_name == "rand-score":
-        return lambda X, Y, params: -metrics.rand_score(Y, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
+        return lambda params: -metrics.rand_score(Y, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
     elif cost_func_name == "adjusted-rand-score":
-        return lambda X, Y, params: -metrics.adjusted_rand_score(Y, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
+        return lambda params: -metrics.adjusted_rand_score(Y, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
     elif cost_func_name == "davies-bouldin":
-        return lambda X, Y, params: -metric_cost_func(metrics.davies_bouldin_score, X, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
+        return lambda params: -metric_cost_func(metrics.davies_bouldin_score, X, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
     elif cost_func_name == "calinski-harabasz":
-        return lambda X, Y, params: -metric_cost_func(metrics.calinski_harabasz_score, X, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
+        return lambda params: -metric_cost_func(metrics.calinski_harabasz_score, X, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
+    elif cost_func_name == "test":
+        return test(X, kernel_obj, n_clusters)
     else:
         raise ValueError(f"Unknown cost function: {cost_func_name}")
     pass
+
+def get_above_thresh(A, thresh):
+    b = []
+    for i in range(A.shape[0]):
+        for j in range(A.shape[1]):
+            if i != j and A[i][j] >= thresh:
+                if i not in b:
+                    b.append(i)
+                if j not in b:
+                    b.append(j)
+    b.sort()
+    return b
+
+def count_above_thresh(A, count, starting_thresh):
+    thresh = starting_thresh
+    c = get_above_thresh(A, thresh)
+    while len(c) < count:
+        thresh -= 0.05
+        c = get_above_thresh(A, thresh)
+    return c
+
+def test(X, kernel_obj, n_clusters):
+    K = qml.kernels.square_kernel_matrix(
+        X,
+        kernel_obj.kernel,
+        assume_normalized_kernel=False,
+    )
+    c = count_above_thresh(K, 5, 0.9)
+    reduced_X = X[c]
+    reduced_K = K[c,:][:,c]
+
+    true_labels = clustering("kmeans", {}, "precomputed", n_clusters, reduced_K)
+
+    return lambda params: -multiclass_target_alignment(reduced_X, true_labels, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
 
 def metric_cost_func(metric_func, X, kernel, n_clusters):
     labels = clustering("kmeans", {}, kernel, n_clusters, X)
@@ -47,12 +83,15 @@ def centered_kernel_mat(kernel_mat):
     return np.dot(np.dot(M, kernel_mat), M)
 
 def multiclass_target_alignment(X, Y, kernel, num_classes, assume_normalized_kernel=False):
-    K = qml.kernels.square_kernel_matrix(
-        X,
-        kernel,
-        assume_normalized_kernel=assume_normalized_kernel,
-    )
-    K = square_postprocessing(K)
+    if kernel == "precomputed":
+        K = X
+    else:
+        K = qml.kernels.square_kernel_matrix(
+            X,
+            kernel,
+            assume_normalized_kernel=assume_normalized_kernel,
+        )
+        K = square_postprocessing(K)
     num_samples = Y.shape[0]
 
     T = None

@@ -78,10 +78,12 @@ class QuantumVariationalKernel():
             parts = [perm[i:i+batch_size] for i in range(0, len(perm), batch_size)]
 
             for idx, subset in enumerate(parts):
-                cost_func = get_cost_func(cost_func_name, cost_func_params, self, n_clusters)
+                cost_func = get_cost_func(train_X[subset], train_Y[subset], cost_func_name, cost_func_params, self, n_clusters)
+                self.params, c = opt.step_and_cost(cost_func, self.params)
 
-                self.params, c = opt.step_and_cost(lambda _params: cost_func(train_X[subset], train_Y[subset], _params), self.params)
-                cost_val = cost_func(val_X, val_Y, self.params)
+                cost_func = get_cost_func(val_X, val_Y, cost_func_name, cost_func_params, self, n_clusters)
+                cost_val = cost_func(self.params)
+
                 step_num = epoch * len(parts) + idx
                 print("Step: {}, cost: {}, val_cost: {}".format(step_num, c, cost_val))
                 if self.logging_obj is not None:
