@@ -16,7 +16,7 @@ def __kernel_help(i, j, x, y, kernel):
 
 def parallel_square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
     if processing_pool is None:
-        return qml.kernels.square_kernel_matrix(X, kernel)
+        return qml.kernels.square_kernel_matrix(X, kernel, assume_normalized_kernel)
 
     N = len(X)
     matrix = [0] * N ** 2

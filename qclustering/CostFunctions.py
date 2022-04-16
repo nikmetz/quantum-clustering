@@ -37,7 +37,7 @@ def get_cost_func(cost_func_name, cost_func_params, kernel_obj, n_clusters):
 def metric_cost_func(metric_func, X, kernel, n_clusters):
     labels = clustering("kmeans", {}, kernel, n_clusters, X)
     if len(np.unique(labels)) != n_clusters:
-        return 0
+        return 0.
     else:
         return metric_func(X, labels)
 
@@ -94,7 +94,7 @@ def triplet_loss(X, labels, kernel, strategy="random", alpha=1):
     if strategy == "minmax":
         #only needed for minmax strategy, not random
         K = qml.kernels.square_kernel_matrix(X, kernel, assume_normalized_kernel=False)
-        K = 1 - square_postprocessing(K)
+        K = square_postprocessing(K)
 
     for anchor_idx, anchor in enumerate(X):
         
@@ -112,14 +112,14 @@ def triplet_loss(X, labels, kernel, strategy="random", alpha=1):
         if strategy == "random":
             pos_idx = np.random.randint(X[positive_mask].shape[0], size=1)[0]
             neg_idx = np.random.randint(X[negative_mask].shape[0], size=1)[0]
-            dist_anchor_positive = 1 - kernel(anchor, X[positive_mask][pos_idx])
-            dist_anchor_negative = 1 - kernel(anchor, X[negative_mask][neg_idx])
+            k_anchor_positive = kernel(anchor, X[positive_mask][pos_idx])
+            k_anchor_negative = kernel(anchor, X[negative_mask][neg_idx])
         elif strategy == "minmax":
             current = K[anchor_idx]
-            dist_anchor_positive = current[positive_mask].max()
-            dist_anchor_negative = current[negative_mask].min()
+            k_anchor_positive = current[positive_mask].max()
+            k_anchor_negative = current[negative_mask].min()
         
-        sum = sum + max(dist_anchor_positive - dist_anchor_negative + alpha, 0)
+        sum = sum + max(alpha - k_anchor_positive + k_anchor_negative, 0)
     return sum
 
 def clustering_risk(X, labels, kernel, n_clusters):
