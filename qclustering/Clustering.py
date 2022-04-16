@@ -7,13 +7,15 @@ from pennylane import numpy as np
 def clustering(algorithm, algorithm_params, kernel, n_clusters, X):
     if callable(kernel):
         # kernel parameter is a function
-        distance = lambda x1, x2: 1 - kernel(x1, x2)
+        #distance = lambda x1, x2: 1 - kernel(x1, x2)
+        distance = lambda x1, x2: np.sqrt(2 * (1 - np.sqrt(kernel(x1, x2))))
         X_distance = X
     else:
         # kernel parameter is "precomputed" and X is the kernel matrix
         distance = kernel
         X_distance = 1 - X
-        X_distance = X_distance.clip(min=0)
+        X_distance = np.sqrt(2 * (1 - np.sqrt(X)))
+        #X_distance = X_distance.clip(min=0)
 
     if algorithm  == "kmeans":
         kmeans = KernelKMeans(n_clusters=n_clusters, kernel=kernel, **algorithm_params)
