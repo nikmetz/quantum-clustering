@@ -10,12 +10,12 @@ def clustering(algorithm, algorithm_params, kernel, n_clusters, X):
         #distance = lambda x1, x2: 1 - kernel(x1, x2)
         distance = lambda x1, x2: np.sqrt(2 * (1 - np.sqrt(kernel(x1, x2))))
         X_distance = X
-    else:
+    elif kernel == "precomputed":
         # kernel parameter is "precomputed" and X is the kernel matrix
-        distance = kernel
-        X_distance = 1 - X
+        distance = "precomputed"
+        #X_distance = 1 - X
         X_distance = np.sqrt(2 * (1 - np.sqrt(X)))
-        #X_distance = X_distance.clip(min=0)
+        X_distance = X_distance.clip(min=0)
 
     if algorithm  == "kmeans":
         kmeans = KernelKMeans(n_clusters=n_clusters, kernel=kernel, **algorithm_params)
@@ -28,7 +28,7 @@ def clustering(algorithm, algorithm_params, kernel, n_clusters, X):
         return spectral.fit(X).labels_
     elif algorithm == "agglomerative":
         agglomerative = AgglomerativeClustering(n_clusters=n_clusters, affinity=distance, **algorithm_params)
-        return agglomerative.fit(X).labels_
+        return agglomerative.fit(X_distance).labels_
     elif algorithm == "dbscan":
         dbscan = DBSCAN(metric=distance, **algorithm_params)
         return dbscan.fit(X_distance).labels_
