@@ -37,7 +37,11 @@ def run_json_config(js, path=""):
 
     np.random.seed(numpy_seed)
 
-    init_params = get_params(strategy=js.get("init_params"), num_wires=wires, num_layers=layers, params_per_wire=params_per_wire)
+    init_value = js.get("init_value", 0)
+    if js.get("init_pi", False):
+        init_value = init_value * np.pi
+
+    init_params = get_params(strategy=js.get("init_params"), value=init_value, num_wires=wires, num_layers=layers, params_per_wire=params_per_wire)
 
     ansatz = get_ansatz(ansatz_name, layers, ansatz_params)
 

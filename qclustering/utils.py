@@ -86,11 +86,11 @@ def build_noise_model_qiskit(noise_model_params, num_qubits):
 
     return None
 
-def get_params(strategy="random", **params):
+def get_params(strategy="random", value=0, **params):
     if strategy == "random":
         return random_params(**params)
     elif strategy == "fixed":
-        return fixed_value_params(**params)
+        return fixed_value_params(value=value, **params)
     else:
         return ValueError(f"Unknown parameters initialization strategy: {strategy}")
 
