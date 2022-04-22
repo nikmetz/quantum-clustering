@@ -9,19 +9,19 @@ def generate(dataset, **dataset_params) -> DataSet:
     test_size = dataset_params.pop("test_size", 50)
 
     if dataset == "circles":
-        x, y = datasets.make_circles(n_samples=train_size + test_size + val_size, **dataset_params)
+        x, y = datasets.make_circles(n_samples=100 + test_size, random_state=1337, **dataset_params)
     elif dataset == "moons":
-        x, y = datasets.make_moons(n_samples=train_size + test_size + val_size, **dataset_params)
+        x, y = datasets.make_moons(n_samples=100 + test_size, random_state=1337, **dataset_params)
     elif dataset == "classification":
-        x, y = datasets.make_classification(n_samples=train_size + test_size + val_size, **dataset_params)
+        x, y = datasets.make_classification(n_samples=100 + test_size, random_state=1337, **dataset_params)
     elif dataset == "blobs":
-        x, y = datasets.make_blobs(n_samples=train_size + test_size + val_size, **dataset_params)
+        x, y = datasets.make_blobs(n_samples=100 + test_size, random_state=1337, **dataset_params)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
 
     x_train, y_train = x[:train_size], y[:train_size]
     x_val, y_val = x[train_size:train_size+val_size], y[train_size:train_size+val_size]
-    x_test, y_test = x[train_size+val_size:train_size+val_size+test_size], y[train_size+val_size:train_size+val_size+test_size]
+    x_test, y_test = x[100:100+test_size], y[100:100+test_size]
 
     return DataSet(x_train, y_train, x_val, y_val, x_test, y_test)
 
@@ -59,7 +59,7 @@ def donuts(
     test_size = 20,
     val_size = 20,
     num_donuts = 2,
-    train_donut_inner_distance = 0.25,
+    train_donut_inner_distance = 0.4,
     val_donut_inner_distance = None,
     test_donut_inner_distance = None,
     switch_label = True,
@@ -71,8 +71,9 @@ def donuts(
     if test_donut_inner_distance is None:
         test_donut_inner_distance = train_donut_inner_distance
     
-    x_train, y_train = single_donut(train_size, num_donuts, train_donut_inner_distance, switch_label)
-    x_test, y_test = single_donut(test_size, num_donuts, test_donut_inner_distance, switch_label)
-    x_val, y_val = single_donut(val_size, num_donuts, val_donut_inner_distance, switch_label)
+    x, y = single_donut(100+test_size, num_donuts, train_donut_inner_distance, switch_label)
+    x_train, y_train = x[:train_size], y[:train_size]
+    x_val, y_val = x[train_size:train_size+val_size], y[train_size:train_size+val_size]
+    x_test, y_test = x[100:100+test_size], y[100:100+test_size]
 
     return DataSet(x_train, y_train, x_val, y_val, x_test, y_test)
