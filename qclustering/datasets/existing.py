@@ -25,10 +25,12 @@ def load_existing(dataset, train_size=50, val_size=5, test_size=50, shuffle=True
 
     x_train, y_train = data[:train_size], target[:train_size]
     x_val, y_val = data[train_size:train_size+val_size], target[train_size:train_size+val_size]
-    #if train_size + test_size + val_size > num_samples:
+    if train_size + test_size + val_size > num_samples:
+        x_test, y_test = data[:test_size], target[:test_size]
+    else:
+        x_test, y_test = data[train_size+val_size:train_size+val_size+test_size], target[train_size+val_size:train_size+val_size+test_size]
+    #x_test, y_test = data[50:50+test_size], target[50:50+test_size]
+    #if test_size > 100:
     #    x_test, y_test = data[:test_size], target[:test_size]
-    #else:
-    #    x_test, y_test = data[train_size+val_size:train_size+val_size+test_size], target[train_size+val_size:train_size+val_size+test_size]
-    x_test, y_test = data[50:50+test_size], target[50:50+test_size]
 
     return DataSet(x_train, y_train, x_val, y_val, x_test, y_test)

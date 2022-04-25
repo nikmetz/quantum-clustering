@@ -120,10 +120,9 @@ class SwapQuantumVariationalKernel(QuantumVariationalKernel):
                 wires=2*wires+1,
                 shots=shots,
                 noise_model=build_noise_model_qiskit(noise_model, 2*wires+1),
-                max_parallel_threads=1,
+                max_parallel_threads=10,
                 max_parallel_experiments=1,
-                max_parallel_shots=1,
-                max_memory_mb=2*1024
+                max_parallel_shots=0
             )
         elif device == "default.mixed":
             self.noise = build_noise_model_qml(noise_model)
