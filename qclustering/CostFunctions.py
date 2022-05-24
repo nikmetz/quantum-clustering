@@ -8,26 +8,22 @@ from qclustering.Clustering import clustering
 from qclustering.KernelMatrix import square_postprocessing
 
 def get_cost_func(X, Y, cost_func_name, cost_func_params, kernel_obj, n_clusters):
-    if cost_func_name == "KTA-supervised":
+    if cost_func_name == "KTA":
         return lambda params: -multiclass_target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, **cost_func_params)
-    elif cost_func_name == "original-KTA-supervised":
+    elif cost_func_name == "original-KTA":
         return lambda params: -qml.kernels.target_alignment(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
     elif cost_func_name == "hilbert-schmidt":
         return lambda params: hilbert_schmidt(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params))
     elif cost_func_name == "clustering-risk":
         return lambda params: clustering_risk(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
-    elif cost_func_name == "KTA-unsupervised":
-        pass
-    elif cost_func_name == "triplet-loss-supervised":
+    elif cost_func_name == "triplet-loss":
         return lambda params: triplet_loss(X, Y, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), **cost_func_params)
-    elif cost_func_name == "triplet-loss-unsupervised":
-        pass
     elif cost_func_name == "rand-score":
         return lambda params: -metrics.rand_score(Y, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
     elif cost_func_name == "adjusted-rand-score":
         return lambda params: -metrics.adjusted_rand_score(Y, clustering("kmeans", {}, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters, X))
     elif cost_func_name == "davies-bouldin":
-        return lambda params: -metric_cost_func(metrics.davies_bouldin_score, X, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
+        return lambda params: metric_cost_func(metrics.davies_bouldin_score, X, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
     elif cost_func_name == "calinski-harabasz":
         return lambda params: -metric_cost_func(metrics.calinski_harabasz_score, X, lambda x1, x2: kernel_obj.kernel_with_params(x1, x2, params), n_clusters)
     elif cost_func_name == "test":
